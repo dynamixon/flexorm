@@ -1,0 +1,7 @@
+io.github.dynamixon.flexorm.dialect.typemapping.DefaultTypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.H2TypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.HsqlDbTypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.MsSqlTypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.MysqlTypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.PgTypeMapper
+io.github.dynamixon.flexorm.dialect.typemapping.SqliteTypeMapper

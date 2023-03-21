@@ -1,0 +1,6 @@
+io.github.dynamixon.flexorm.dialect.batch.DefaultBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.HsqlDbBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.MsSqlBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.MysqlBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.PgBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.SqliteBatchInserter

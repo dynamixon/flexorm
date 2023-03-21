@@ -1,0 +1,17 @@
+{
+  "driver":"com.mysql.jdbc.Driver",
+  "catalog":"",
+  "dbUrl":"jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useInformationSchema=true",
+  "dbUser":"root",
+  "dbPass":"",
+  "srcRoot":"/src/test/java",
+  "domainPackage":"io.github.dynamixon.dataobject",
+  "lombokMode":true,
+  "autoColumnDetection": true,
+  "extraTypeMap":{
+
+  },
+  "table2ClassMap":{
+    "dummy":"DummyTmp"
+  }
+}

@@ -1,0 +1,497 @@
+package io.github.dynamixon.flexorm;
+
+import io.github.dynamixon.flexorm.annotation.Table;
+import io.github.dynamixon.flexorm.dialect.DialectConst;
+import io.github.dynamixon.flexorm.dialect.DialectFactory;
+import io.github.dynamixon.flexorm.dialect.batch.BatchInserter;
+import io.github.dynamixon.flexorm.dialect.batch.DefaultBatchInserter;
+import io.github.dynamixon.flexorm.dialect.pagination.*;
+import io.github.dynamixon.flexorm.enums.LoggerLevel;
+import io.github.dynamixon.flexorm.logic.SqlBuilder;
+import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
+import io.github.dynamixon.flexorm.misc.*;
+import io.github.dynamixon.flexorm.pojo.Config;
+import io.github.dynamixon.flexorm.pojo.CountInfo;
+import io.github.dynamixon.flexorm.pojo.QueryConditionBundle;
+import io.github.dynamixon.flexorm.pojo.SqlPreparedBundle;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.dbutils.BasicRowProcessor;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.MapListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.*;
+
+public class CoreRunner {
+    private static final Logger logger = LoggerFactory.getLogger(CoreRunner.class);
+    private final QueryRunner queryRunner;
+    private final SqlBuilder sqlBuilder;
+    private String dbType;
+    private BatchInserter batchInserter;
+    private Pagination pagination;
+    private OfflinePagination offlinePagination;
+    private Config config;
+
+    public CoreRunner(QueryRunner queryRunner) {
+        this(queryRunner, null, null);
+    }
+
+    public CoreRunner(QueryRunner queryRunner, String dbType) {
+        this(queryRunner, dbType, null);
+    }
+
+    public CoreRunner(QueryRunner queryRunner, Config config) {
+        this(queryRunner, null, config);
+    }
+
+    public CoreRunner(QueryRunner queryRunner, String dbType, Config config) {
+        this.queryRunner = queryRunner;
+        this.config = config==null?Config.defaultConfig():config;
+        if (dbType == null) {
+            this.dbType = new PlatformUtils().determineDatabaseType(queryRunner.getDataSource());
+            if (DialectFactory.SUPPORTED_DB.stream().noneMatch(this.dbType::equalsIgnoreCase)) {
+                this.dbType = DialectConst.DEFAULT;
+            }
+        } else {
+            this.dbType = dbType;
+        }
+        initDialect();
+        sqlBuilder = new SqlBuilder(this);
+    }
+
+    private void initDialect() {
+        boolean batchInserterMatch = false;
+        ServiceLoader<BatchInserter> batchInserters = ServiceLoader.load(BatchInserter.class);
+        for (BatchInserter batchInserter : batchInserters) {
+            if (batchInserter.match(dbType)) {
+                this.batchInserter = batchInserter;
+                batchInserterMatch = true;
+                break;
+            }
+        }
+        if (!batchInserterMatch) {
+            this.batchInserter = new DefaultBatchInserter();
+        }
+
+        boolean paginationMatch = false;
+        ServiceLoader<Pagination> paginations = ServiceLoader.load(Pagination.class);
+        for (Pagination pagination : paginations) {
+            if (pagination.match(dbType)) {
+                this.pagination = pagination;
+                paginationMatch = true;
+                break;
+            }
+        }
+        if (!paginationMatch) {
+            this.pagination = new DefaultPagination();
+        }
+
+        boolean offlinePaginationMatch = false;
+        ServiceLoader<OfflinePagination> offlinePaginations = ServiceLoader.load(OfflinePagination.class);
+        for (OfflinePagination offlinePagination : offlinePaginations) {
+            if (offlinePagination.match(dbType)) {
+                this.offlinePagination = offlinePagination;
+                offlinePaginationMatch = true;
+                break;
+            }
+        }
+        if (!offlinePaginationMatch) {
+            if (!(this.pagination instanceof DefaultPagination)) {
+                this.offlinePagination = new DummyOfflinePagination();
+            } else {
+                this.offlinePagination = new DefaultOfflinePagination();
+            }
+        }
+        logger.info("batchInserterMatch[{}],batchInserter[{}];paginationMatch[{}],pagination[{}];offlinePaginationMatch[{}],offlinePagination[{}]", batchInserterMatch, batchInserter, paginationMatch, pagination, offlinePaginationMatch, offlinePagination);
+    }
+
+    public String getDbType() {
+        return dbType;
+    }
+
+    public DataSource getDataSource() {
+        return queryRunner.getDataSource();
+    }
+
+    public QueryRunner getQueryRunner() {
+        return queryRunner;
+    }
+
+    public BatchInserter getBatchInserter() {
+        return batchInserter;
+    }
+
+    public Pagination getPagination() {
+        return pagination;
+    }
+
+    public OfflinePagination getOfflinePagination() {
+        return offlinePagination;
+    }
+
+    public Config getConfig() {
+        return config==null?Config.defaultConfig():config;
+    }
+
+    public void setConfig(Config config) {
+        this.config = config;
+    }
+
+    public <T> List<T> genericQry(String sql, Class<T> clazz, Object[] values) {
+        if (clazz.isAnnotationPresent(Table.class)) {
+            TableObjectMetaCache.initTableObjectMeta(clazz, this);
+        }
+        return genericQry(sql, new BeanListHandler<>(clazz, new BasicRowProcessor(MoreGenerousBeanProcessorFactory.populateBeanProcessor(clazz,getDataSource()))), values);
+    }
+
+    public <T> T genericQry(String sql, ResultSetHandler<T> resultSetHandler, Object[] values) {
+        T result;
+        InterceptorContext interceptorContext = null;
+        try {
+            interceptorContext = initInterceptorContext(sql,values);
+            sql = getIdSql(interceptorContext.getSql());
+            long start = System.currentTimeMillis();
+            if(interceptorContext.isResultDelegate()){
+                result = interceptorContext.getGenericDelegateResult();
+            }else {
+                result = queryRunner.query(sql, resultSetHandler, interceptorContext.getValues());
+                interceptorContext.setRealResult(result);
+            }
+            long end = System.currentTimeMillis();
+            String outputDenote = "";
+            if (result != null) {
+                if (result instanceof List) {
+                    outputDenote = "RESULT-SIZE";
+                } else {
+                    outputDenote = "OUTPUT";
+                }
+            }
+            long timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+            log(sql, interceptorContext, result, outputDenote, timeCost);
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext);
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> genericQry(String sql, Object[] values) {
+        List<Map<String, Object>> list = null;
+        InterceptorContext interceptorContext = null;
+        try {
+            interceptorContext = initInterceptorContext(sql,values);
+            sql = getIdSql(interceptorContext.getSql());
+            long start = System.currentTimeMillis();
+            if(interceptorContext.isResultDelegate()){
+                list = interceptorContext.getGenericDelegateResult();
+            }else {
+                list = queryRunner.query(sql, new MapListHandler(), interceptorContext.getValues());
+                interceptorContext.setRealResult(list);
+            }
+            long end = System.currentTimeMillis();
+            long timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+            log(sql, interceptorContext, list, "RESULT-SIZE", timeCost);
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext);
+        }
+        return list;
+    }
+
+    public int genericUpdate(String sql, Object[] values) {
+        int affected = 0;
+        InterceptorContext interceptorContext = null;
+        try {
+            interceptorContext = initInterceptorContext(sql,values);
+            sql = getIdSql(interceptorContext.getSql());
+            long start = System.currentTimeMillis();
+            if(interceptorContext.isResultDelegate()){
+                affected = interceptorContext.getGenericDelegateResult();
+            }else {
+                affected = queryRunner.update(sql, interceptorContext.getValues());
+                interceptorContext.setRealResult(affected);
+            }
+            long end = System.currentTimeMillis();
+            long timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+            log(sql, interceptorContext, affected, "AFFECTED", timeCost);
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext);
+        }
+        return affected;
+    }
+
+    public <T> List<T> genericQry(QueryConditionBundle qryCondition) {
+        Class<?> resultClass = qryCondition.getResultClass();
+        List<T> list = null;
+        try {
+            SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
+            String sql = sqlPreparedBundle.getSql();
+            Object[] values = sqlPreparedBundle.getValues();
+            if (resultClass.equals(Map.class)) {
+                list = (List<T>) genericQry(sql, values);
+            } else {
+                list = genericQry(sql, (Class<T>) resultClass, values);
+            }
+        } catch (Exception e) {
+            throw new DBException(e);
+        }
+        return list;
+    }
+
+    public int genericCount(QueryConditionBundle qryCondition){
+        try {
+            SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
+            String sql = sqlPreparedBundle.getSql();
+            Object[] values = sqlPreparedBundle.getValues();
+            String countSql = "select count(*) as count from ("+sql+") count_tmp_tbl";
+            List<CountInfo> countInfos = genericQry(countSql,CountInfo.class,values);
+            return countInfos.get(0).getCount();
+        } catch (Exception e) {
+            throw new DBException(e);
+        }
+    }
+
+    public int insert(String table, Map<String, Object> valueMap) {
+        int affectedNum = 0;
+        StringBuilder sql = new StringBuilder("insert into " + table + " (");
+        StringBuilder valueSql = new StringBuilder(" values( ");
+        List<Object> values = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : valueMap.entrySet()) {
+            String field = entry.getKey();
+            Object value = entry.getValue();
+            if (value != null) {
+                sql.append(field).append(",");
+                valueSql.append("?,");
+                values.add(value);
+            }
+        }
+        sql = new StringBuilder(StringUtils.stripEnd(sql.toString(), ",") + ") ");
+        valueSql = new StringBuilder(StringUtils.stripEnd(valueSql.toString(), ",") + ") ");
+        sql.append(valueSql);
+        affectedNum = genericUpdate(sql.toString(), values.toArray());
+        return affectedNum;
+    }
+
+    public <T> T insertWithReturn(String table,Integer columnIndex, String columnName, Map<String, Object> valueMap) {
+        long start = System.currentTimeMillis();
+        T rt = null;
+        InterceptorContext interceptorContext = null;
+        try {
+            StringBuilder sql = new StringBuilder("insert into " + table + " (");
+            StringBuilder valueSql = new StringBuilder(" values( ");
+            List<Object> values = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : valueMap.entrySet()) {
+                String field = entry.getKey();
+                Object value = entry.getValue();
+                if (value != null) {
+                    sql.append(field).append(",");
+                    valueSql.append("?,");
+                    values.add(value);
+                }
+            }
+            sql = new StringBuilder(StringUtils.stripEnd(sql.toString(), ",") + ") ");
+            valueSql = new StringBuilder(StringUtils.stripEnd(valueSql.toString(), ",") + ") ");
+            sql.append(valueSql);
+            Object[] valueArr = values.toArray();
+            ScalarHandler<T> scalarHandler;
+            if(StringUtils.isBlank(columnName)){
+                scalarHandler = new ScalarHandler<>(columnIndex==null?1:columnIndex);
+            }else {
+                scalarHandler = new ScalarHandler<>(columnName);
+            }
+            interceptorContext = initInterceptorContext(sql.toString(),valueArr);
+            sql = new StringBuilder(getIdSql(interceptorContext.getSql()));
+            if(interceptorContext.isResultDelegate()){
+                rt = interceptorContext.getGenericDelegateResult();
+            }else {
+                rt = queryRunner.insert(sql.toString(), scalarHandler, interceptorContext.getValues());
+                interceptorContext.setRealResult(rt);
+            }
+            long end = System.currentTimeMillis();
+            long timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+            log(sql.toString(), interceptorContext, rt, "OUTPUT", timeCost);
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext);
+        }
+        return rt;
+    }
+
+    public int batchInsert(String table, List<Map<String, Object>> listMap) {
+        return batchInserter.batchInsert(this, table, listMap);
+    }
+
+    public List<String> getColNames(String table) {
+        List<String> cols = null;
+        try {
+            long start = System.currentTimeMillis();
+            String sql = "select * from " + table + " where 1=2";
+            cols = queryRunner.query(sql, resultSet -> {
+                List<String> cols1 = new ArrayList<>();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = metaData.getColumnLabel(i);
+                    if (null == columnName || 0 == columnName.length()) {
+                        columnName = metaData.getColumnName(i);
+                    }
+                    cols1.add(columnName);
+                }
+                return cols1;
+            });
+            long end = System.currentTimeMillis();
+            log(sql, null, cols, "RESULT-SIZE", (end - start));
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }
+        return cols;
+    }
+
+    public Map<String, String> getTableMetas() {
+        Map<String, String> map = new HashMap<>();
+        DataSource dataSource = queryRunner.getDataSource();
+        try (Connection conn = dataSource.getConnection()) {
+            DatabaseMetaData md = conn.getMetaData();
+            ResultSet tablesRs = md.getTables(null, null, "%", null);
+            while (tablesRs.next()) {
+                String tableName = tablesRs.getString("TABLE_NAME");
+                //make sure jdbc url contains parameter: useInformationSchema=true (MySQL)
+                String comment = tablesRs.getString("REMARKS");
+                map.put(tableName, comment);
+            }
+        } catch (Exception e) {
+            throw new DBException(e);
+        }
+        return map;
+    }
+
+    private void log(String sql, InterceptorContext interceptorContext, Object output, String outputDenote, long elapsed) {
+        try {
+            Object[] values = interceptorContext ==null?null: interceptorContext.getValues();
+            boolean resultDelegate = interceptorContext != null && interceptorContext.isResultDelegate();
+            Boolean ignoreLog = GeneralThreadLocal.get(DzConst.IGNORE_LOG);
+            if(ignoreLog!=null&&ignoreLog){
+                return;
+            }
+            String delegateFlag = resultDelegate?"[DELEGATED]":"";
+            String log = delegateFlag+"===> SQL: " + sql;
+            if (values != null) {
+                log += "  VALUES: " + new ArrayList<>(Arrays.asList(values));
+            }
+            if (output != null) {
+                if ("RESULT-SIZE".equalsIgnoreCase(outputDenote)) {
+                    log += "\n"+delegateFlag+"<=== " + outputDenote + ": " + ((List) output).size();
+                } else {
+                    log += "\n"+delegateFlag+"<=== " + outputDenote + ": " + output;
+                }
+            }
+            log += "\n"+delegateFlag+"<==> ELAPSED: " + elapsed + " ms.";
+
+            boolean logStack = getConfig().isLogStack();
+            if (logStack) {
+                StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+                log += "\n<==< INVOKE-CHAIN:"+conciseStack(stack);
+            }
+            LoggerLevel loggerLevel = getConfig().getLoggerLevel();
+            if(loggerLevel==null){
+                logger.debug(log);
+                return;
+            }
+            switch (loggerLevel) {
+                case INFO:
+                    logger.info(log);
+                    break;
+                case WARN:
+                    logger.warn(log);
+                    break;
+                default:
+                    logger.debug(log);
+                    break;
+            }
+        } catch (Exception e) {
+            logger.warn("log error", e);
+        }
+    }
+
+    private String getIdSql(String sql) {
+        String idSql = sql;
+        String sqlId = ExtraParamInjector.getSqlId();
+        if (StringUtils.isNotBlank(sqlId)) {
+            try {
+                idSql = "/* " + sqlId + " */ " + sql;
+            } finally {
+                ExtraParamInjector.unsetSqlId();
+            }
+        }
+        return idSql;
+    }
+
+    private InterceptorContext initInterceptorContext(String sql, Object[] values){
+        SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+        if(sqlExecutionInterceptor !=null){
+            InterceptorContext interceptorContext = new InterceptorContext(sql,values);
+            sqlExecutionInterceptor.beforeExecution(interceptorContext);
+            return interceptorContext;
+        }
+        return new InterceptorContext(sql,values);
+    }
+
+    private void postIntercept(InterceptorContext interceptorContext){
+        try {
+            SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+            if(interceptorContext==null || sqlExecutionInterceptor==null){
+                return;
+            }
+            sqlExecutionInterceptor.afterExecution(interceptorContext);
+        } finally {
+            ExtraParamInjector.unsetInterceptor();
+        }
+    }
+
+    private String conciseStack(StackTraceElement[] stack) {
+        try {
+            StringBuilder conciseInfo = new StringBuilder();
+            if (stack != null) {
+                List<String> logStackPackages = config.getLogStackPackages();
+                List<StackTraceElement> elements = new ArrayList<>(Arrays.asList(stack));
+                for (StackTraceElement element : elements) {
+                    String className = element.getClassName();
+                    if (CollectionUtils.isNotEmpty(logStackPackages)) {
+                        boolean match = logStackPackages.stream().anyMatch(p -> StringUtils.trimToEmpty(className).startsWith(p));
+                        if (!match) {
+                            continue;
+                        }
+                    }
+                    String fileName = element.getFileName();
+                    int lineNumber = element.getLineNumber();
+                    String infoPart = (fileName != null && lineNumber >= 0 ?
+                        "(" + fileName + ":" + lineNumber + ")" :
+                        (fileName != null ? "(" + fileName + ")" : "(Unknown Source)"));
+                    conciseInfo.append(infoPart).append("<-");
+                }
+            }
+            String info = conciseInfo.toString();
+            info = StringUtils.stripEnd(info, "<-");
+            return info;
+        } catch (Throwable e) {
+            logger.warn("conciseStack error", e);
+            return "Unknown Stack";
+        }
+    }
+}

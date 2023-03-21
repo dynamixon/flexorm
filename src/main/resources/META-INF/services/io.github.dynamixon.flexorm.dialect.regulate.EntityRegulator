@@ -1,0 +1,4 @@
+io.github.dynamixon.flexorm.dialect.regulate.DefaultEntityRegulator
+io.github.dynamixon.flexorm.dialect.regulate.H2DbEntityRegulator
+io.github.dynamixon.flexorm.dialect.regulate.HsqlDbEntityRegulator
+io.github.dynamixon.flexorm.dialect.regulate.PgEntityRegulator

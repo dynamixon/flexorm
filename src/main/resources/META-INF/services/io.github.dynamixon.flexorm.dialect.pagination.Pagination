@@ -1,0 +1,7 @@
+io.github.dynamixon.flexorm.dialect.pagination.DefaultPagination
+io.github.dynamixon.flexorm.dialect.pagination.H2Pagination
+io.github.dynamixon.flexorm.dialect.pagination.HsqlDbPagination
+io.github.dynamixon.flexorm.dialect.pagination.MsSqlPagination
+io.github.dynamixon.flexorm.dialect.pagination.MysqlPagination
+io.github.dynamixon.flexorm.dialect.pagination.PgPagination
+io.github.dynamixon.flexorm.dialect.pagination.SqlitePagination
