@@ -1,2 +1,2 @@
 # flexorm
-ORM framework for Java
+ORM framework for Java.
