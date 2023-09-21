@@ -48,7 +48,7 @@ public class CustomBeanProcessor extends BeanProcessor {
      */
     protected static final Map<Class<?>, Object> primitiveDefaults = new HashMap<>();
 
-    private static final List<ColumnHandler> defaultColumnHandlerList = Arrays.asList(
+    private static final List<ColumnHandler<?>> defaultColumnHandlerList = Arrays.asList(
         new BooleanColumnHandler(),
         new ByteColumnHandler(),
         new DoubleColumnHandler(),
@@ -60,7 +60,7 @@ public class CustomBeanProcessor extends BeanProcessor {
         new StringColumnHandler(),
         new TimestampColumnHandler()
     );
-    private static final List<ColumnHandler> columnHandlerList = new ArrayList<>();
+    private static final List<ColumnHandler<?>> columnHandlerList = new ArrayList<>();
 
     private static final List<PropertyHandler> defaultPropertyHandlerList = Arrays.asList(
         new DatePropertyHandler(),
@@ -69,21 +69,21 @@ public class CustomBeanProcessor extends BeanProcessor {
 
     private static final List<PropertyHandler> propertyHandlerList = new ArrayList<>();
 
-    protected static final Map<BeanClassFieldNameKey, BeanFieldColumnHandler> beanFieldColumnHandlerMap = new HashMap<>();
+    protected static final Map<BeanClassFieldNameKey, BeanFieldColumnHandler<?>> beanFieldColumnHandlerMap = new HashMap<>();
 
     static {
-        primitiveDefaults.put(Integer.TYPE, Integer.valueOf(0));
-        primitiveDefaults.put(Short.TYPE, Short.valueOf((short) 0));
-        primitiveDefaults.put(Byte.TYPE, Byte.valueOf((byte) 0));
-        primitiveDefaults.put(Float.TYPE, Float.valueOf(0f));
-        primitiveDefaults.put(Double.TYPE, Double.valueOf(0d));
-        primitiveDefaults.put(Long.TYPE, Long.valueOf(0L));
+        primitiveDefaults.put(Integer.TYPE, 0);
+        primitiveDefaults.put(Short.TYPE, (short) 0);
+        primitiveDefaults.put(Byte.TYPE, (byte) 0);
+        primitiveDefaults.put(Float.TYPE, 0f);
+        primitiveDefaults.put(Double.TYPE, 0d);
+        primitiveDefaults.put(Long.TYPE, 0L);
         primitiveDefaults.put(Boolean.TYPE, Boolean.FALSE);
-        primitiveDefaults.put(Character.TYPE, Character.valueOf((char) 0));
+        primitiveDefaults.put(Character.TYPE, (char) 0);
 
         columnHandlerList.addAll(defaultColumnHandlerList);
         ServiceLoader<ColumnHandler> columnHandlers = ServiceLoader.load(ColumnHandler.class);
-        for (ColumnHandler columnHandler : columnHandlers) {
+        for (ColumnHandler<?> columnHandler : columnHandlers) {
             if(!containsSameClassInstance(columnHandlerList,columnHandler)) {
                 columnHandlerList.add(columnHandler);
             }
@@ -96,7 +96,7 @@ public class CustomBeanProcessor extends BeanProcessor {
             }
         }
         ServiceLoader<BeanFieldColumnHandler> beanFieldColumnHandlers = ServiceLoader.load(BeanFieldColumnHandler.class);
-        for (BeanFieldColumnHandler beanFieldColumnHandler : beanFieldColumnHandlers) {
+        for (BeanFieldColumnHandler<?> beanFieldColumnHandler : beanFieldColumnHandlers) {
             beanFieldColumnHandlerMap.put(beanFieldColumnHandler.id(),beanFieldColumnHandler);
         }
         logger.info("columnHandlerList:"+columnHandlerList);
@@ -154,7 +154,7 @@ public class CustomBeanProcessor extends BeanProcessor {
      */
     @Override
     public <T> List<T> toBeanList(ResultSet rs, Class<? extends T> type) throws SQLException {
-        List<T> results = new ArrayList<T>();
+        List<T> results = new ArrayList<>();
 
         if (!rs.next()) {
             return results;
@@ -235,7 +235,7 @@ public class CustomBeanProcessor extends BeanProcessor {
         if ( !propType.isPrimitive() && retval == null ) {
             return null;
         }
-        for (ColumnHandler handler : columnHandlerList) {
+        for (ColumnHandler<?> handler : columnHandlerList) {
             if (handler.match(propType)) {
                 retval = handler.apply(rs, index);
                 break;
@@ -245,14 +245,14 @@ public class CustomBeanProcessor extends BeanProcessor {
     }
 
     protected Object processColumn(ResultSet rs, int index, BeanClassFieldNameKey key) throws SQLException{
-        BeanFieldColumnHandler handler = beanFieldColumnHandlerMap.get(key);
+        BeanFieldColumnHandler<?> handler = beanFieldColumnHandlerMap.get(key);
         return handler.apply(rs,index);
     }
 
     protected Object processColumn(ResultSet rs, int index, Field resultCastField) throws SQLException {
         ResultCast resultCast = resultCastField.getAnnotation(ResultCast.class);
         try {
-            ResultCastHandler resultCastHandler = resultCast.value().newInstance();
+            ResultCastHandler<?> resultCastHandler = resultCast.value().newInstance();
             return resultCastHandler.apply(rs,index);
         } catch (InstantiationException | IllegalAccessException e) {
             throw new SQLException(e);

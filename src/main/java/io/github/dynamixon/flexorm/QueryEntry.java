@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableLoc;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
+import io.github.dynamixon.flexorm.logic.namedsql.NamedParamSqlUtil;
 import io.github.dynamixon.flexorm.misc.*;
 import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
@@ -28,7 +29,7 @@ public class QueryEntry {
         this(ds,dbType,null);
     }
 
-    public QueryEntry(DataSource ds, String dbType, Config config) {
+    public QueryEntry(DataSource ds, String dbType,Config config) {
         this.coreRunner = new CoreRunner(new QueryRunner(ds), dbType,config);
     }
 
@@ -113,6 +114,14 @@ public class QueryEntry {
         classes.forEach(this::refreshTableMetaCache);
     }
 
+    public void removeCache(Class<?> tableClass){
+        TableObjectMetaCache.removeCache(tableClass,getDataSource());
+    }
+
+    public void removeCacheAll(){
+        TableObjectMetaCache.removeCacheAll(getDataSource());
+    }
+
     public void registerTableObjectMeta(Class<?> clazz, String tableName){
         registerTableObjectMeta(false, clazz, tableName);
     }
@@ -125,17 +134,36 @@ public class QueryEntry {
         return coreRunner.genericQry(sql, clazz, values);
     }
 
+    public <T> List<T> genericNamedParamQry(String namedParamSql, Class<T> clazz, Map<String,?> paramMap){
+        SqlPreparedBundle sqlPreparedBundle = NamedParamSqlUtil.fromNamed(namedParamSql, paramMap);
+        return genericQry(sqlPreparedBundle.getSql(),clazz,sqlPreparedBundle.getValues());
+    }
+
     public List<Map<String, Object>> genericQry(String sql, Object... values) {
         return coreRunner.genericQry(sql, values);
     }
 
+    public List<Map<String, Object>> genericNamedParamQry(String namedParamSql, Map<String,?> paramMap){
+        SqlPreparedBundle sqlPreparedBundle = NamedParamSqlUtil.fromNamed(namedParamSql, paramMap);
+        return genericQry(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues());
+    }
 
     public <T> T genericQry(String sql, ResultSetHandler<T> resultSetHandler, Object... values) {
         return coreRunner.genericQry(sql, resultSetHandler, values);
     }
 
+    public <T> T genericNamedParamQry(String namedParamSql, ResultSetHandler<T> resultSetHandler, Map<String,?> paramMap){
+        SqlPreparedBundle sqlPreparedBundle = NamedParamSqlUtil.fromNamed(namedParamSql, paramMap);
+        return genericQry(sqlPreparedBundle.getSql(),resultSetHandler,sqlPreparedBundle.getValues());
+    }
+
     public int genericUpdate(String sql, Object... values) {
         return coreRunner.genericUpdate(sql, values);
+    }
+
+    public int genericNamedParamUpdate(String namedParamSql, Map<String,?> paramMap){
+        SqlPreparedBundle sqlPreparedBundle = NamedParamSqlUtil.fromNamed(namedParamSql, paramMap);
+        return genericUpdate(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues());
     }
 
     public int delObjects(String table, List<Cond> conds) {
@@ -225,7 +253,7 @@ public class QueryEntry {
                 }
             }
         } finally {
-            ExtraParamInjector.unSet();
+            ExtraParamInjector.unSetForQuery();
         }
         return rtList;
     }
@@ -314,39 +342,54 @@ public class QueryEntry {
         return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),null,null, toFieldValueMap(record));
     }
 
-    public int batchInsertToTable(String table, int bulkSize, Object... records) {
+    public int batchInsertValueMapToTable(String table, int bulkSize, List<Map<String, Object>> valueMapList) {
         int num = 0;
-        if (records != null) {
-            Map<String, List<Map<String, Object>>> dataMap = new HashMap<>();
-            for (Object record : records) {
-                if (record != null) {
-                    Map<String, Object> valueMap = toFieldValueMap(record);
-                    List<String> keys = valueMap.keySet().stream().sorted().collect(Collectors.toList());
-                    String keysStr = keys.toString();
-                    if (dataMap.containsKey(keysStr)) {
-                        dataMap.get(keysStr).add(valueMap);
-                    } else {
-                        List<Map<String, Object>> listMap = new ArrayList<>();
-                        listMap.add(valueMap);
-                        dataMap.put(keysStr, listMap);
-                    }
-                }
+        if (CollectionUtils.isEmpty(valueMapList)) {
+            return num;
+        }
+        Map<String, List<Map<String, Object>>> dataMap = new HashMap<>();
+        for (Map<String, Object> valueMap : valueMapList) {
+            if (MapUtils.isEmpty(valueMap)) {
+                continue;
             }
-            String sqlId = ExtraParamInjector.getSqlId();
-            SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
-            boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
-            for (List<Map<String, Object>> list : dataMap.values()) {
-                List<List<Map<String, Object>>> partitions = Lists.partition(list, bulkSize);
-                for (List<Map<String, Object>> partition : partitions) {
-                    ExtraParamInjector.sqlId(sqlId);
-                    if(interceptorSpan){
-                        ExtraParamInjector.intercept(sqlExecutionInterceptor);
-                    }
-                    num += coreRunner.batchInsert(table, partition);
+            List<String> keys = valueMap.keySet().stream().sorted().collect(Collectors.toList());
+            String keysStr = keys.toString();
+            if (dataMap.containsKey(keysStr)) {
+                dataMap.get(keysStr).add(valueMap);
+            } else {
+                List<Map<String, Object>> listMap = new ArrayList<>();
+                listMap.add(valueMap);
+                dataMap.put(keysStr, listMap);
+            }
+        }
+        String sqlId = ExtraParamInjector.getSqlId();
+        SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+        boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
+        for (List<Map<String, Object>> list : dataMap.values()) {
+            List<List<Map<String, Object>>> partitions = Lists.partition(list, bulkSize);
+            for (List<Map<String, Object>> partition : partitions) {
+                ExtraParamInjector.sqlId(sqlId);
+                if(interceptorSpan){
+                    ExtraParamInjector.intercept(sqlExecutionInterceptor);
                 }
+                num += coreRunner.batchInsert(table, partition);
             }
         }
         return num;
+    }
+
+    public int batchInsertToTable(String table, int bulkSize, Object... records) {
+        int num = 0;
+        if (records == null || records.length==0) {
+            return num;
+        }
+        List<Map<String, Object>> valueMapList = new ArrayList<>();
+        for (Object record : records) {
+            if (record != null) {
+                valueMapList.add(toFieldValueMap(record));
+            }
+        }
+        return batchInsertValueMapToTable(table,bulkSize,valueMapList);
     }
 
     public int batchInsertWithSize(int bulkSize, Object... records) {
@@ -380,11 +423,11 @@ public class QueryEntry {
                 }
             }
             UpdateConditionBundle upCond = new UpdateConditionBundle.Builder()
-                    .targetTable(table)
-                    .values2Update(pairs)
-                    .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
-                    .conditionOrList(ExtraParamInjector.getExtraOrConds())
-                    .build();
+                .targetTable(table)
+                .values2Update(pairs)
+                .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
+                .conditionOrList(ExtraParamInjector.getExtraOrConds())
+                .build();
             boolean noCond = CollectionUtils.isEmpty(upCond.getConditionAndList()) && CollectionUtils.isEmpty(upCond.getConditionOrList());
             if(noCond&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -514,12 +557,12 @@ public class QueryEntry {
         int count = 0;
         try {
             QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
-                    .targetTable(TableLoc.findTableName(clazz,getDataSource()))
-                    .onlyCount(true)
-                    .resultClass(CountInfo.class)
-                    .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
-                    .conditionOrList(ExtraParamInjector.getExtraOrConds())
-                    .build();
+                .targetTable(TableLoc.findTableName(clazz,getDataSource()))
+                .onlyCount(true)
+                .resultClass(CountInfo.class)
+                .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
+                .conditionOrList(ExtraParamInjector.getExtraOrConds())
+                .build();
             List<CountInfo> counts = genericQry(qcCount);
             count = counts.get(0).getCount();
         } finally {

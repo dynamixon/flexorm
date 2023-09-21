@@ -5,10 +5,10 @@ import io.github.dynamixon.flexorm.columnhandler.ResultCastHandler;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class IdCastHandler implements ResultCastHandler {
+public class IdCastHandler implements ResultCastHandler<String> {
 
     @Override
-    public Object apply(ResultSet rs, int columnIndex) throws SQLException {
+    public String apply(ResultSet rs, int columnIndex) throws SQLException {
         Object value = rs.getObject(columnIndex);
         return "IdCastHandler-value:"+value;
     }

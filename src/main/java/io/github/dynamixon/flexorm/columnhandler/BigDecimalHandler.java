@@ -10,14 +10,14 @@ import java.sql.SQLException;
  * @author halflife3
  * @date 2019/9/26
  */
-public class BigDecimalHandler implements ColumnHandler {
+public class BigDecimalHandler implements ColumnHandler<BigDecimal> {
     @Override
     public boolean match(Class<?> propType) {
         return propType.equals(BigDecimal.class);
     }
 
     @Override
-    public Object apply(ResultSet rs, int columnIndex) throws SQLException {
+    public BigDecimal apply(ResultSet rs, int columnIndex) throws SQLException {
         return BigDecimal.valueOf(rs.getDouble(columnIndex));
     }
 }

@@ -7,7 +7,7 @@ import io.github.dynamixon.flexorm.annotation.Primary;
 import io.github.dynamixon.flexorm.annotation.Table;
 import io.github.dynamixon.flexorm.misc.DBException;
 import io.github.dynamixon.flexorm.misc.MiscUtil;
-import io.github.dynamixon.flexorm.pojo.MetaHolder;
+import io.github.dynamixon.flexorm.misc.MetaHolder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,15 +22,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TableObjectMetaCache {
     private static final Logger logger = LoggerFactory.getLogger(TableObjectMetaCache.class);
 
-    private final static Map<DataSource, MetaHolder> metaMap = new ConcurrentHashMap<>();
+    private final static Map<DataSource, MetaHolder> metaMap = MetaHolder.initMap("metaMap");
 
     private static MetaHolder getOrInitMetaHolder(DataSource dataSource){
         if(metaMap.containsKey(dataSource)){
             return metaMap.get(dataSource);
         }else {
-            MetaHolder metaHolder = new MetaHolder();
-            metaMap.put(dataSource,metaHolder);
-            return metaHolder;
+            if(metaMap instanceof ConcurrentHashMap){
+                MetaHolder metaHolder = new MetaHolder();
+                metaMap.put(dataSource, metaHolder);
+                return metaHolder;
+            }else {
+                synchronized (TableObjectMetaCache.class) {
+                    if (metaMap.containsKey(dataSource)) {
+                        return metaMap.get(dataSource);
+                    } else {
+                        MetaHolder metaHolder = new MetaHolder();
+                        metaMap.put(dataSource, metaHolder);
+                        return metaHolder;
+                    }
+                }
+            }
         }
     }
 
@@ -66,7 +78,7 @@ public class TableObjectMetaCache {
             String regulatedFieldName = fieldName.replace("_", "").toLowerCase();
             if(column!=null){
                 String colName4SqlCompose = StringUtils.isNotBlank(column.customValue())?column.customValue():
-                        (StringUtils.isNotBlank(column.value())?column.value():fieldName);
+                    (StringUtils.isNotBlank(column.value())?column.value():fieldName);
                 String colName4FieldMapping = StringUtils.isNotBlank(column.value())?column.value():fieldName;
                 fieldToColumnMap.put(fieldName,colName4SqlCompose);
                 columnToFieldMap.put(colName4FieldMapping.toLowerCase(),fieldName);
@@ -89,10 +101,10 @@ public class TableObjectMetaCache {
 
         }
         MetaHolder metaHolder = getOrInitMetaHolder(coreRunner.getDataSource());
-        metaHolder.getTableNameMap().put(tableClass,tableName);
-        metaHolder.getPrimaryFieldsClassMap().put(tableClass,primaryFields);
-        metaHolder.getFieldToColumnClassMap().put(tableClass,fieldToColumnMap);
-        metaHolder.getColumnToFieldClassMap().put(tableClass,columnToFieldMap);
+        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,tableName);
+        metaHolder.putToMap(metaHolder.getPrimaryFieldsClassMap(),tableClass,primaryFields);
+        metaHolder.putToMap(metaHolder.getFieldToColumnClassMap(),tableClass,fieldToColumnMap);
+        metaHolder.putToMap(metaHolder.getColumnToFieldClassMap(),tableClass,columnToFieldMap);
         logger.info("tableClass:{} meta inited.",tableClass);
     }
 
@@ -126,10 +138,11 @@ public class TableObjectMetaCache {
             columnToFieldMap.putAll(columnToFieldCustomMap);
         }
         MetaHolder metaHolder = getOrInitMetaHolder(coreRunner.getDataSource());
-        metaHolder.getTableNameMap().put(tableClass,tableName);
-        metaHolder.getPrimaryFieldsClassMap().put(tableClass,primaryFields==null?Collections.emptyList():primaryFields);
-        metaHolder.getFieldToColumnClassMap().put(tableClass,fieldToColumnMap);
-        metaHolder.getColumnToFieldClassMap().put(tableClass,columnToFieldMap);
+
+        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,tableName);
+        metaHolder.putToMap(metaHolder.getPrimaryFieldsClassMap(),tableClass,primaryFields==null?Collections.emptyList():primaryFields);
+        metaHolder.putToMap(metaHolder.getFieldToColumnClassMap(),tableClass,fieldToColumnMap);
+        metaHolder.putToMap(metaHolder.getColumnToFieldClassMap(),tableClass,columnToFieldMap);
         logger.info("tableClass:{} meta registered. datasource:{}",tableClass,coreRunner.getDataSource());
     }
 
@@ -165,18 +178,18 @@ public class TableObjectMetaCache {
 
     public static void removeCacheAll(DataSource dataSource){
         MetaHolder metaHolder = getOrInitMetaHolder(dataSource);
-        metaHolder.getFieldToColumnClassMap().clear();
-        metaHolder.getColumnToFieldClassMap().clear();
-        metaHolder.getPrimaryFieldsClassMap().clear();
-        metaHolder.getTableNameMap().clear();
+        metaHolder.removeAll(metaHolder.getFieldToColumnClassMap());
+        metaHolder.removeAll(metaHolder.getColumnToFieldClassMap());
+        metaHolder.removeAll(metaHolder.getPrimaryFieldsClassMap());
+        metaHolder.removeAll(metaHolder.getTableNameMap());
     }
 
     public static void removeCache(Class<?> tableClass,DataSource dataSource){
         MetaHolder metaHolder = getOrInitMetaHolder(dataSource);
-        metaHolder.getFieldToColumnClassMap().remove(tableClass);
-        metaHolder.getColumnToFieldClassMap().remove(tableClass);
-        metaHolder.getPrimaryFieldsClassMap().remove(tableClass);
-        metaHolder.getTableNameMap().remove(tableClass);
+        metaHolder.removeFromMap(metaHolder.getFieldToColumnClassMap(),tableClass);
+        metaHolder.removeFromMap(metaHolder.getColumnToFieldClassMap(),tableClass);
+        metaHolder.removeFromMap(metaHolder.getPrimaryFieldsClassMap(),tableClass);
+        metaHolder.removeFromMap(metaHolder.getTableNameMap(),tableClass);
     }
 
     public static void refreshCache(Class<?> tableClass, QueryEntry queryEntry){

@@ -1,6 +1,7 @@
 package io.github.dynamixon.flexorm.pojo;
 
 import io.github.dynamixon.flexorm.enums.LoggerLevel;
+import io.github.dynamixon.flexorm.misc.SqlExecutionInterceptor;
 
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +14,7 @@ public class Config {
     private boolean logStack;
     private List<String> logStackPackages;
     private LoggerLevel loggerLevel;
+    private SqlExecutionInterceptor globalSqlExecutionInterceptor;
 
     private static final Config defaultConfig;
 
@@ -49,5 +51,13 @@ public class Config {
 
     public void setLoggerLevel(LoggerLevel loggerLevel) {
         this.loggerLevel = loggerLevel;
+    }
+
+    public SqlExecutionInterceptor getGlobalSqlExecutionInterceptor() {
+        return globalSqlExecutionInterceptor;
+    }
+
+    public void setGlobalSqlExecutionInterceptor(SqlExecutionInterceptor globalSqlExecutionInterceptor) {
+        this.globalSqlExecutionInterceptor = globalSqlExecutionInterceptor;
     }
 }

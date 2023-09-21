@@ -17,8 +17,7 @@ import org.junit.Test
 class BundledTest {
     @Test
     void test(){
-        new TableLocTest().test()
-        new SqlBuilderTest().testInnerAndOrBasic();
+        localTest()
         for (CommonTest ct in [
             new MysqlTest(),
             new PgTest(),
@@ -43,5 +42,14 @@ class BundledTest {
         new SPITest().test()
         new TableLocTest().test()
         MetaCacheTest.printCurrentCache()
+    }
+
+    static void localTest(){
+        new TableLocTest().test()
+        new SqlBuilderTest().testInnerAndOrBasic()
+        def namedSqlTest = new NamedSqlTest()
+        namedSqlTest.basicTest()
+        namedSqlTest.inParamTest()
+        namedSqlTest.cacheTest()
     }
 }

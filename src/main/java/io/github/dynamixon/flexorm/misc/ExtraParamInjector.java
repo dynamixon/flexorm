@@ -1,5 +1,6 @@
 package io.github.dynamixon.flexorm.misc;
 
+import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.pojo.Cond;
 import io.github.dynamixon.flexorm.pojo.OrderCond;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,7 +44,7 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
-    public static ParamPrep having(Cond... conds){
+    public static ParamPrep having(Cond ... conds){
         if(conds!=null&&conds.length>0){
             GeneralThreadLocal.set(DzConst.HAVING_CONDS, Arrays.asList(conds));
         }
@@ -104,7 +105,12 @@ public class ExtraParamInjector {
     }
 
     public static ParamPrep intercept(SqlExecutionInterceptor sqlExecutionInterceptor){
+        return interceptWithChainMode(sqlExecutionInterceptor,SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
+    }
+
+    public static ParamPrep interceptWithChainMode(SqlExecutionInterceptor sqlExecutionInterceptor, SqlExecutionInterceptorChainMode chainMode){
         GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR, sqlExecutionInterceptor);
+        GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE, chainMode);
         return paramPrep;
     }
 
@@ -154,7 +160,11 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.SQL_EXECUTION_INTERCEPTOR);
     }
 
-    public static void unSet(){
+    public static SqlExecutionInterceptorChainMode getSqlInterceptorChainMode(){
+        return GeneralThreadLocal.get(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE);
+    }
+
+    public static void unSetForQuery(){
         PagingInjector.unSet();
         GeneralThreadLocal.unset(DzConst.SELECT_COLUMNS);
         GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
@@ -170,6 +180,10 @@ public class ExtraParamInjector {
 
     public static void unsetInterceptor(){
         GeneralThreadLocal.unset(DzConst.SQL_EXECUTION_INTERCEPTOR);
+    }
+
+    public static void unsetInterceptorChainMode(){
+        GeneralThreadLocal.unset(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE);
     }
 
     public static void unsetExtraConds(){

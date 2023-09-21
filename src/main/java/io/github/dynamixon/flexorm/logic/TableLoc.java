@@ -2,7 +2,7 @@ package io.github.dynamixon.flexorm.logic;
 
 
 import io.github.dynamixon.flexorm.annotation.Table;
-import io.github.dynamixon.flexorm.pojo.MetaHolder;
+import io.github.dynamixon.flexorm.misc.MetaHolder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;

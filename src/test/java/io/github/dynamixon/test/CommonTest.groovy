@@ -1,23 +1,15 @@
 package io.github.dynamixon.test
 
-
-import io.github.dynamixon.dataobject.CustomId
-import io.github.dynamixon.dataobject.DummyTable
-import io.github.dynamixon.dataobject.OnlyId
-import io.github.dynamixon.dataobject.RegObject
-import io.github.dynamixon.dataobject.ResultCastId
+import io.github.dynamixon.dataobject.*
 import io.github.dynamixon.flexorm.CoreRunner
 import io.github.dynamixon.flexorm.QueryEntry
 import io.github.dynamixon.flexorm.annotation.Column
 import io.github.dynamixon.flexorm.dialect.DialectConst
 import io.github.dynamixon.flexorm.enums.LoggerLevel
+import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode
 import io.github.dynamixon.flexorm.logic.TableLoc
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache
-import io.github.dynamixon.flexorm.misc.DBException
-import io.github.dynamixon.flexorm.misc.GeneralThreadLocal
-import io.github.dynamixon.flexorm.misc.InterceptorContext
-import io.github.dynamixon.flexorm.misc.MiscUtil
-import io.github.dynamixon.flexorm.misc.SqlExecutionInterceptor
+import io.github.dynamixon.flexorm.misc.*
 import io.github.dynamixon.flexorm.pojo.Cond
 import io.github.dynamixon.flexorm.pojo.Config
 import io.github.dynamixon.flexorm.pojo.Null
@@ -183,6 +175,7 @@ class CommonTest {
                     exist()
                     extraCondCount()
                     genericQry4Map()
+                    genericNamedParamQry()
                     querySingleAndExist()
                     selectColumnsTest()
                     orderTest()
@@ -198,6 +191,7 @@ class CommonTest {
                     otherResultClassTest()
                     colHandleTest()
                     interceptTest()
+                    interceptWithGlobalTest()
                     loggerLevelTest()
                     testRegisterTableObjectMeta()
                     testRefreshTableMetaCache()
@@ -206,6 +200,7 @@ class CommonTest {
                     testRemoveAllTableMetaCache()
                     insertOne()
                     nullCond()
+                    genericNamedParamUpdate()
                     updateSelective()
                     extraCondUpdateSelective()
                     updateSelectiveByFieldOrColumn()
@@ -344,30 +339,30 @@ class CommonTest {
         logger.info ' -- typeMapping -- '
         qe.prep(sqlId(verboseSqlId("typeMapping")))
             .genericQry("select * from ${tableName()}",new ResultSetHandler<List<Void>>() {
-            @Override
-            List<Void> handle(ResultSet rs) throws SQLException {
-                def metaData = rs.getMetaData()
-                def count = metaData.getColumnCount()
-                while (rs.next()){
-                    for (i in 1 .. count){
-                        def object = rs.getObject(i)
-                        if(object!=null){
-                            logger.info ("${object.getClass().name} # ${metaData.getColumnTypeName(i)} # ${object}")
+                @Override
+                List<Void> handle(ResultSet rs) throws SQLException {
+                    def metaData = rs.getMetaData()
+                    def count = metaData.getColumnCount()
+                    while (rs.next()){
+                        for (i in 1 .. count){
+                            def object = rs.getObject(i)
+                            if(object!=null){
+                                logger.info ("${object.getClass().name} # ${metaData.getColumnTypeName(i)} # ${object}")
+                            }
                         }
+                        break
                     }
-                    break
+                    return null
                 }
-                return null
-            }
-        })
+            })
     }
 
     void queryAll(){
         logger.info ' -- queryAll -- '
         List<? extends DummyTable> list = qe.prep(
-                sqlId(verboseSqlId("queryAll")),
-                offset(null,null,false,new OrderCond("id"))
-            ).searchObjects(getCurrentClass().newInstance())
+            sqlId(verboseSqlId("queryAll")),
+            offset(null,null,false,new OrderCond("id"))
+        ).searchObjects(getCurrentClass().newInstance())
         assert list.size() == 200
         GeneralThreadLocal.set("allRecords",list)
     }
@@ -398,7 +393,7 @@ class CommonTest {
         def nonExistId = maxId+1
         assert !qe.prep(sqlId(verboseSqlId("exist step5")))
             .exist(getCurrentClass(),new Cond("id",nonExistId))
-        
+
     }
 
     void extraCondCount(){
@@ -443,6 +438,43 @@ class CommonTest {
                 assert mapRecord.get(colName)!=null
             }
         }
+    }
+
+    void genericNamedParamQry(){
+        logger.info ' -- genericNamedParamQry -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        def id = MiscUtil.extractFieldValueFromObj(record,"id")
+        String sql = "select * from ${tableName()} where id = :id"
+        List<Map<String,Object>> result = qe
+            .prep(sqlId(verboseSqlId("genericNamedParamQry step1")))
+            .genericNamedParamQry(sql, [id:id])
+        assert result.size() == 1
+
+        List<? extends DummyTable> listRt = qe.prep(
+            sqlId(verboseSqlId("genericNamedParamQry step2"))
+        ).genericNamedParamQry(sql,getCurrentClass(), [id:id])
+        assert listRt.size() == 1
+
+        List<String> listRt2 = qe.prep(
+            sqlId(verboseSqlId("genericNamedParamQry step3"))
+        ).genericNamedParamQry(sql, new ResultSetHandler<List<String>>(){
+            @Override
+            List<String> handle(ResultSet rs) throws SQLException {
+                List<String> tmpList = []
+                while (rs.next()){
+                    tmpList.add(rs.getObject(1)?.toString())
+                }
+                return tmpList
+            }
+        }, [id:id])
+        assert listRt2.size() == 1
+
+        String inSql = "select * from ${tableName()} where id = :id and id in (:idList)"
+        List<Map<String,Object>> inResult = qe
+            .prep(sqlId(verboseSqlId("genericNamedParamQry step4")))
+            .genericNamedParamQry(inSql, [id:id,idList:[id,id]])
+        assert inResult.size() == 1
     }
 
     void querySingleAndExist(){
@@ -868,6 +900,67 @@ class CommonTest {
         assert sqlRecord[1].startsWith('insert')
     }
 
+    void interceptWithGlobalTest(){
+        logger.info ' -- interceptWithGlobalTest -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        def config = qe.getCoreRunner().getConfig()
+        def oldGlobalSqlExecutionInterceptor = config.getGlobalSqlExecutionInterceptor()
+        List<String> interceptorInfoTrack = []
+        SqlExecutionInterceptor globalSqlExecutionInterceptor = new SqlExecutionInterceptor() {
+            @Override
+            void afterExecution(InterceptorContext interceptorContext) {
+                interceptorInfoTrack.add('global')
+            }
+        }
+        SqlExecutionInterceptor sqlExecutionInterceptor = new SqlExecutionInterceptor() {
+            @Override
+            void afterExecution(InterceptorContext interceptorContext) {
+                interceptorInfoTrack.add('per')
+            }
+        }
+        config.setGlobalSqlExecutionInterceptor(globalSqlExecutionInterceptor)
+
+        qe.prep(
+            sqlId(verboseSqlId('interceptWithGlobalTest step1'))
+        ).findObject(getCurrentClass(), new Cond('id', record.getId()))
+        assert interceptorInfoTrack.size()==1
+        assert interceptorInfoTrack[0] == 'global'
+
+        interceptorInfoTrack.clear()
+
+        qe.prep(
+            sqlId(verboseSqlId('interceptWithGlobalTest step2')),
+            interceptWithChainMode(sqlExecutionInterceptor, SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL)
+        ).findObject(getCurrentClass(), new Cond('id', record.getId()))
+        assert interceptorInfoTrack.size()==2
+        assert interceptorInfoTrack[0] == 'global'
+        assert interceptorInfoTrack[1] == 'per'
+
+        interceptorInfoTrack.clear()
+
+        qe.prep(
+            sqlId(verboseSqlId('interceptWithGlobalTest step3')),
+            interceptWithChainMode(sqlExecutionInterceptor, SqlExecutionInterceptorChainMode.CHAIN_BEFORE_GLOBAL)
+        ).findObject(getCurrentClass(), new Cond('id', record.getId()))
+        assert interceptorInfoTrack.size()==2
+        assert interceptorInfoTrack[0] == 'per'
+        assert interceptorInfoTrack[1] == 'global'
+
+        interceptorInfoTrack.clear()
+
+        qe.prep(
+            sqlId(verboseSqlId('interceptWithGlobalTest step4')),
+            interceptWithChainMode(sqlExecutionInterceptor, SqlExecutionInterceptorChainMode.OVERWRITE_GLOBAL)
+        ).findObject(getCurrentClass(), new Cond('id', record.getId()))
+        assert interceptorInfoTrack.size()==1
+        assert interceptorInfoTrack[0] == 'per'
+
+        interceptorInfoTrack.clear()
+
+        config.setGlobalSqlExecutionInterceptor(oldGlobalSqlExecutionInterceptor)
+    }
+
     void loggerLevelTest(){
         logger.info ' -- loggerLevelTest -- '
         def config = qe.getCoreRunner().getConfig()
@@ -919,7 +1012,7 @@ class CommonTest {
                 assert e instanceof DBException
                 assert e.getMessage().contains('refreshCache failed')
             }
-           return
+            return
         }
         def fieldToColumnMap = TableObjectMetaCache.getFieldToColumnMap(clazz,qe.dataSource)
         def columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(clazz,qe.dataSource)
@@ -949,7 +1042,7 @@ class CommonTest {
             return
         }
         logger.info('current class='+getCurrentClass() +' classNeedRegMeta:'+configMap().get("classNeedRegMeta"))
-        TableObjectMetaCache.removeCacheAll(qe.dataSource)
+        qe.removeCacheAll()
         def clazz = getCurrentClass()
         def pkgName = clazz.getPackage().getName()
         Set<Class<?>> classes = TableLoc.tableClasses(pkgName,qe.dataSource)
@@ -972,7 +1065,7 @@ class CommonTest {
             logger.info 'testRemoveAllTableMetaCache ignored'
             return
         }
-        TableObjectMetaCache.removeCacheAll(qe.dataSource)
+        qe.removeCacheAll()
         def clazz = getCurrentClass()
         def pkgName = clazz.getPackage().getName()
         Set<Class<?>> classes = TableLoc.tableClasses(pkgName,qe.dataSource)
@@ -1002,7 +1095,7 @@ class CommonTest {
             return
         }
         def clazz = getCurrentClass()
-        TableObjectMetaCache.removeCacheAll(qe.dataSource)
+        qe.removeCacheAll()
         def fieldToColumnMap = TableObjectMetaCache.getFieldToColumnMap(clazz,qe.dataSource)
         def columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(clazz,qe.dataSource)
         def primaryFields = TableObjectMetaCache.getPrimaryFields(clazz,qe.dataSource)
@@ -1043,6 +1136,15 @@ class CommonTest {
                 compareValueEqual(origValue,resultValue)
             }
         }
+    }
+
+    void genericNamedParamUpdate(){
+        logger.info ' -- genericNamedParamUpdate -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def id2Update = MiscUtil.extractFieldValueFromObj(list.get(0),"id")
+        String sql = "update ${tableName()} set ${nullField4Test()[1]} = :val where id = :id"
+        def updateNum = qe.genericNamedParamUpdate(sql, [val: null, id: id2Update])
+        assert updateNum == 1
     }
 
     void updateSelective(){
@@ -1381,7 +1483,7 @@ class CommonTest {
         }
         assert TransactionTest.tx(getDbType(),clSetup,clException,validException)
     }
-    
+
     String verboseSqlId(String sqlId){
         return "${getQueryEntryDbType()}|${getDbType()} - ${currentClass.simpleName} - ${tableName()}:$sqlId"
     }

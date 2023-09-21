@@ -5,9 +5,9 @@ import io.github.dynamixon.flexorm.pojo.BeanClassFieldNameKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public interface BeanFieldColumnHandler {
+public interface BeanFieldColumnHandler<T> {
 
     BeanClassFieldNameKey id();
 
-    Object apply(ResultSet rs, int columnIndex) throws SQLException;
+    T apply(ResultSet rs, int columnIndex) throws SQLException;
 }

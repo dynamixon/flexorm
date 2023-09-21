@@ -5,6 +5,11 @@ package io.github.dynamixon.flexorm.misc;
  * @date 2021/6/15
  */
 public interface DzConst {
+
+    String WEAK_HASH_MAP_AS_CACHE = "weak.hash.map.as.cache";
+
+    String NAMED_PARAM_SQL_PARSE_CACHE_COUNT = "named.param.sql.parse.cache.count";
+
     String PREFIX = "flexorm_";
 
     String IGNORE_LOG = PREFIX+"ignoreLog";
@@ -81,5 +86,10 @@ public interface DzConst {
      * The Interceptor that intercepts SQL executions
      */
     String SQL_EXECUTION_INTERCEPTOR = PREFIX+"sqlExecutionInterceptor";
+
+    /**
+     * The Interceptor chain mode in which per execution interceptor cooperates with global execution interceptor
+     */
+    String SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE = PREFIX+"sqlExecutionInterceptorChainMode";
 
 }

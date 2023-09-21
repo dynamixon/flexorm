@@ -7,6 +7,7 @@ import io.github.dynamixon.flexorm.dialect.batch.BatchInserter;
 import io.github.dynamixon.flexorm.dialect.batch.DefaultBatchInserter;
 import io.github.dynamixon.flexorm.dialect.pagination.*;
 import io.github.dynamixon.flexorm.enums.LoggerLevel;
+import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
 import io.github.dynamixon.flexorm.misc.*;
@@ -155,7 +156,7 @@ public class CoreRunner {
         T result;
         InterceptorContext interceptorContext = null;
         try {
-            interceptorContext = initInterceptorContext(sql,values);
+            interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
             long start = System.currentTimeMillis();
             if(interceptorContext.isResultDelegate()){
@@ -179,7 +180,7 @@ public class CoreRunner {
         } catch (SQLException e) {
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext);
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
         }
         return result;
     }
@@ -188,7 +189,7 @@ public class CoreRunner {
         List<Map<String, Object>> list = null;
         InterceptorContext interceptorContext = null;
         try {
-            interceptorContext = initInterceptorContext(sql,values);
+            interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
             long start = System.currentTimeMillis();
             if(interceptorContext.isResultDelegate()){
@@ -204,7 +205,7 @@ public class CoreRunner {
         } catch (SQLException e) {
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext);
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
         }
         return list;
     }
@@ -213,7 +214,7 @@ public class CoreRunner {
         int affected = 0;
         InterceptorContext interceptorContext = null;
         try {
-            interceptorContext = initInterceptorContext(sql,values);
+            interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
             long start = System.currentTimeMillis();
             if(interceptorContext.isResultDelegate()){
@@ -229,7 +230,7 @@ public class CoreRunner {
         } catch (SQLException e) {
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext);
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
         }
         return affected;
     }
@@ -313,7 +314,7 @@ public class CoreRunner {
             }else {
                 scalarHandler = new ScalarHandler<>(columnName);
             }
-            interceptorContext = initInterceptorContext(sql.toString(),valueArr);
+            interceptorContext = initInterceptorContext(sql.toString(),valueArr,config.getGlobalSqlExecutionInterceptor());
             sql = new StringBuilder(getIdSql(interceptorContext.getSql()));
             if(interceptorContext.isResultDelegate()){
                 rt = interceptorContext.getGenericDelegateResult();
@@ -328,7 +329,7 @@ public class CoreRunner {
         } catch (SQLException e) {
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext);
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
         }
         return rt;
     }
@@ -442,25 +443,55 @@ public class CoreRunner {
         return idSql;
     }
 
-    private InterceptorContext initInterceptorContext(String sql, Object[] values){
+    private List<SqlExecutionInterceptor> composeSqlExecutionInterceptors(SqlExecutionInterceptor globalSqlExecutionInterceptor){
         SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
-        if(sqlExecutionInterceptor !=null){
+        if(sqlExecutionInterceptor==null&&globalSqlExecutionInterceptor==null){
+            return null;
+        }
+        if(sqlExecutionInterceptor==null){
+            return Collections.singletonList(globalSqlExecutionInterceptor);
+        }
+        SqlExecutionInterceptorChainMode sqlExecutionInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
+        if(sqlExecutionInterceptorChainMode==null){
+            sqlExecutionInterceptorChainMode = SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL;
+        }
+        List<SqlExecutionInterceptor> interceptors = new ArrayList<>();
+        interceptors.add(globalSqlExecutionInterceptor);
+        interceptors.add(sqlExecutionInterceptor);
+        if(sqlExecutionInterceptorChainMode == SqlExecutionInterceptorChainMode.CHAIN_BEFORE_GLOBAL){
+            Collections.reverse(interceptors);
+        }else if(sqlExecutionInterceptorChainMode == SqlExecutionInterceptorChainMode.OVERWRITE_GLOBAL){
+            interceptors.remove(0);
+        }
+        interceptors.removeIf(Objects::isNull);
+        return interceptors;
+    }
+
+    private InterceptorContext initInterceptorContext(String sql, Object[] values, SqlExecutionInterceptor globalSqlExecutionInterceptor){
+
+        List<SqlExecutionInterceptor> interceptors = composeSqlExecutionInterceptors(globalSqlExecutionInterceptor);
+
+        if(CollectionUtils.isNotEmpty(interceptors)){
             InterceptorContext interceptorContext = new InterceptorContext(sql,values);
-            sqlExecutionInterceptor.beforeExecution(interceptorContext);
+            interceptors.forEach(interceptor -> interceptor.beforeExecution(interceptorContext));
             return interceptorContext;
         }
         return new InterceptorContext(sql,values);
     }
 
-    private void postIntercept(InterceptorContext interceptorContext){
+    private void postIntercept(InterceptorContext interceptorContext, SqlExecutionInterceptor globalSqlExecutionInterceptor){
         try {
-            SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
-            if(interceptorContext==null || sqlExecutionInterceptor==null){
+            if(interceptorContext==null){
                 return;
             }
-            sqlExecutionInterceptor.afterExecution(interceptorContext);
+            List<SqlExecutionInterceptor> interceptors = composeSqlExecutionInterceptors(globalSqlExecutionInterceptor);
+            if(CollectionUtils.isEmpty(interceptors)){
+                return;
+            }
+            interceptors.forEach(interceptor -> interceptor.afterExecution(interceptorContext));
         } finally {
             ExtraParamInjector.unsetInterceptor();
+            ExtraParamInjector.unsetInterceptorChainMode();
         }
     }
 

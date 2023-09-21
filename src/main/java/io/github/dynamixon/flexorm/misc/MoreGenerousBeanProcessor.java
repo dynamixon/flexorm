@@ -48,7 +48,7 @@ public class MoreGenerousBeanProcessor extends CustomBeanProcessor {
             if(StringUtils.isNotBlank(cachedFieldName)){
                 colIndexMap.put(cachedFieldName,col);
             }else {
-                final String generousColumnName = columnName.replace("_", "");
+                final String generousColumnName = columnName.replace("_", "").replace(" ", "");
                 for (String fieldName:fieldNames){
                     Field field = fieldMap.get(fieldName);
                     Column column = field.getAnnotation(Column.class);
