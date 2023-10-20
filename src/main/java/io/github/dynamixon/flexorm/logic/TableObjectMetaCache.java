@@ -62,7 +62,7 @@ public class TableObjectMetaCache {
         if(table==null){
             throw new DBException("Init Table Meta failed: tableClass:"+ className +" has no @Table annotation!");
         }
-        String tableName = table.value();
+        String tableName = TableLoc.fromTableAnnotation(tableClass);
         Map<String,String> fieldToColumnMap = new HashMap<>();
         Map<String,String> columnToFieldMap = new HashMap<>();
         List<String> primaryFields = new ArrayList<>();
@@ -101,7 +101,7 @@ public class TableObjectMetaCache {
 
         }
         MetaHolder metaHolder = getOrInitMetaHolder(coreRunner.getDataSource());
-        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,tableName);
+        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,table.tableNameDynamic()?TableLoc.dynamicTablePlaceholder:tableName);
         metaHolder.putToMap(metaHolder.getPrimaryFieldsClassMap(),tableClass,primaryFields);
         metaHolder.putToMap(metaHolder.getFieldToColumnClassMap(),tableClass,fieldToColumnMap);
         metaHolder.putToMap(metaHolder.getColumnToFieldClassMap(),tableClass,columnToFieldMap);
@@ -113,23 +113,29 @@ public class TableObjectMetaCache {
     }
 
     public static void registerTableObjectMeta(boolean overwrite, Class<?> tableClass, CoreRunner coreRunner,String tableName,Map<String,String> fieldToColumnCustomMap,Map<String,String> columnToFieldCustomMap,List<String> primaryFields){
+        registerTableObjectMeta(overwrite,true,tableClass,coreRunner,tableName,fieldToColumnCustomMap,columnToFieldCustomMap,primaryFields);
+    }
+
+    public static void registerTableObjectMeta(boolean overwrite,boolean mergeWithRealTable, Class<?> tableClass, CoreRunner coreRunner,String tableName,Map<String,String> fieldToColumnCustomMap,Map<String,String> columnToFieldCustomMap,List<String> primaryFields){
         if(!overwrite&&metaInitComplete(tableClass,coreRunner)){
             return;
         }
         Map<String,String> fieldToColumnMap = new HashMap<>();
         Map<String,String> columnToFieldMap = new HashMap<>();
-        List<String> colNames = coreRunner.getColNames(tableName);
-        List<Field> fields = MiscUtil.getAllFields(tableClass);
-        for (Field field : fields) {
-            String fieldName = field.getName();
-            String regulatedFieldName = fieldName.replace("_", "").toLowerCase();
-            colNames.forEach(colName -> {
-                String regulatedColName = colName.replace("_","").toLowerCase();
-                if(regulatedFieldName.equals(regulatedColName)){
-                    fieldToColumnMap.put(fieldName,colName);
-                    columnToFieldMap.put(colName.toLowerCase(),fieldName);
-                }
-            });
+        if(mergeWithRealTable) {
+            List<String> colNames = coreRunner.getColNames(tableName);
+            List<Field> fields = MiscUtil.getAllFields(tableClass);
+            for (Field field : fields) {
+                String fieldName = field.getName();
+                String regulatedFieldName = fieldName.replace("_", "").toLowerCase();
+                colNames.forEach(colName -> {
+                    String regulatedColName = colName.replace("_", "").toLowerCase();
+                    if (regulatedFieldName.equals(regulatedColName)) {
+                        fieldToColumnMap.put(fieldName, colName);
+                        columnToFieldMap.put(colName.toLowerCase(), fieldName);
+                    }
+                });
+            }
         }
         if(MapUtils.isNotEmpty(fieldToColumnCustomMap)){
             fieldToColumnMap.putAll(fieldToColumnCustomMap);
@@ -139,7 +145,12 @@ public class TableObjectMetaCache {
         }
         MetaHolder metaHolder = getOrInitMetaHolder(coreRunner.getDataSource());
 
-        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,tableName);
+        boolean tableNameDynamic = false;
+        Table table = tableClass.getAnnotation(Table.class);
+        if(table!=null){
+            tableNameDynamic = table.tableNameDynamic();
+        }
+        metaHolder.putToMap(metaHolder.getTableNameMap(),tableClass,tableNameDynamic?TableLoc.dynamicTablePlaceholder:tableName);
         metaHolder.putToMap(metaHolder.getPrimaryFieldsClassMap(),tableClass,primaryFields==null?Collections.emptyList():primaryFields);
         metaHolder.putToMap(metaHolder.getFieldToColumnClassMap(),tableClass,fieldToColumnMap);
         metaHolder.putToMap(metaHolder.getColumnToFieldClassMap(),tableClass,columnToFieldMap);

@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**  */
-@Table("DUMMY_TABLE")
+@Table("dummy_table")
 @Data
 public class DummyTableH2 extends DummyTable implements Serializable {
 

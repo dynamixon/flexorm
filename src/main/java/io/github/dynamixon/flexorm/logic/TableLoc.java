@@ -2,7 +2,10 @@ package io.github.dynamixon.flexorm.logic;
 
 
 import io.github.dynamixon.flexorm.annotation.Table;
+import io.github.dynamixon.flexorm.misc.DBException;
+import io.github.dynamixon.flexorm.misc.DefaultTableNameHandler;
 import io.github.dynamixon.flexorm.misc.MetaHolder;
+import io.github.dynamixon.flexorm.misc.TableNameHandler;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -15,9 +18,32 @@ import static org.reflections.scanners.Scanners.TypesAnnotated;
 
 public class TableLoc {
 
+    public static final TableNameHandler defaultTableNameHandler = new DefaultTableNameHandler();
+
+    public static final String dynamicTablePlaceholder = "$$DYNAMIC_TABLE$$";
+
+    public static String fromTableAnnotation(Class<?> tableClass){
+        Table table = tableClass.getAnnotation(Table.class);
+        if(table==null){
+            throw new DBException("fromTableAnnotation failed: tableClass:"+ tableClass.getName() +" has no @Table annotation!");
+        }
+        TableNameHandler tableNameHandler = null;
+        Class<? extends TableNameHandler> tableNameHandlerClass = table.tableNameHandlerClass();
+        if(tableNameHandlerClass.equals(DefaultTableNameHandler.class)){
+            tableNameHandler = defaultTableNameHandler;
+        }else {
+            try {
+                tableNameHandler = tableNameHandlerClass.newInstance();
+            } catch (Exception e) {
+                throw new DBException(e);
+            }
+        }
+        return tableNameHandler.handle(tableClass);
+    }
+
     public static String findTableName(Class<?> type, DataSource dataSource){
         String tableName = findTableNameFromMetaCache(type,dataSource);
-        if(StringUtils.isBlank(tableName)){
+        if(StringUtils.isBlank(tableName)||tableName.equals(dynamicTablePlaceholder)){
             tableName = findTableNameByAnnotation(type);
         }
         return tableName;
@@ -32,8 +58,7 @@ public class TableLoc {
         for (Class<?> c = type; c != null; c = c.getSuperclass()) {
             boolean present = c.isAnnotationPresent(Table.class);
             if(present){
-                Table table = c.getAnnotation(Table.class);
-                tableName = table.value();
+                tableName = fromTableAnnotation(type);
                 break;
             }
         }

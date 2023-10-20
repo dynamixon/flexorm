@@ -188,6 +188,7 @@ class CommonTest {
                     orCondQuery()
                     nullCondQuery()
                     moreQuery()
+                    genericT()
                     otherResultClassTest()
                     colHandleTest()
                     interceptTest()
@@ -787,6 +788,65 @@ class CommonTest {
             offset(0,1,false,new OrderCond('id','desc'))
         ).findObject(getCurrentClass())
         assert record1.getId() != record2.getId()
+    }
+
+    void genericT(){
+        logger.info ' -- genericT -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        def id = MiscUtil.extractFieldValueFromObj(record,"id")
+        def idCond = new Cond('id', id)
+        def records = qe.prep(
+            sqlId(verboseSqlId("genericT step1-1"))
+        ).findObjectsT([idCond],getCurrentClass())
+        assert records[0].getId() == id
+
+        records = qe.prep(
+            sqlId(verboseSqlId("genericT step1-2"))
+        ).findObjectsT(getCurrentClass(),[idCond])
+        assert records[0].getId() == id
+
+        records = qe.prep(
+            sqlId(verboseSqlId("genericT step1-3"))
+        ).findObjectsT(getCurrentClass(),idCond)
+        assert records[0].getId() == id
+
+        records = qe.prep(
+            sqlId(verboseSqlId("genericT step1-4"))
+        ).findObjectsT(tableName(),[idCond],getCurrentClass())
+        assert records[0].getId() == id
+
+        def _record = qe.prep(
+            sqlId(verboseSqlId("genericT step2-1"))
+        ).findObjectT(getCurrentClass(),idCond)
+        assert _record.getId() == id
+
+        _record = qe.prep(
+            sqlId(verboseSqlId("genericT step2-2"))
+        ).findObjectT([idCond],getCurrentClass())
+        assert _record.getId() == id
+
+        _record = qe.prep(
+            sqlId(verboseSqlId("genericT step2-3"))
+        ).findObjectT(getCurrentClass(),[idCond])
+        assert _record.getId() == id
+
+        _record = qe.prep(
+            sqlId(verboseSqlId("genericT step2-4"))
+        ).findObjectT(tableName(),[idCond],getCurrentClass())
+        assert _record.getId() == id
+
+        def search = getCurrentClass().newInstance()
+        MiscUtil.setValue(search,"id",id)
+        records = qe.prep(
+            sqlId(verboseSqlId("genericT step3-1"))
+        ).searchObjectsT(search)
+        assert records[0].getId() == id
+
+        _record = qe.prep(
+            sqlId(verboseSqlId("genericT step3-2"))
+        ).searchObjectT(search)
+        assert _record.getId() == id
     }
 
     void otherResultClassTest(){

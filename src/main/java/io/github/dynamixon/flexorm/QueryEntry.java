@@ -207,6 +207,9 @@ public class QueryEntry {
         return coreRunner.genericQry(qryCondition);
     }
 
+    public <T> List<T> findObjectsT(String table, List<Cond> conds, Class<T> clazz) {
+        return findObjects(table,conds,clazz);
+    }
     public <T> List<T> findObjects(String table, List<Cond> conds, Class<?> clazz) {
         List<T> rtList;
         try {
@@ -262,42 +265,69 @@ public class QueryEntry {
         return findObjects(TableLoc.findTableName(clazz,getDataSource()), condCrafter.craft(primalCond), clazz);
     }
 
+    public <T> List<T> findObjectsT(List<Cond> conds, Class<T> clazz) {
+        return findObjects(conds,clazz);
+    }
     public <T> List<T> findObjects(List<Cond> conds, Class<?> clazz) {
         return findObjects(clazz, conds);
     }
 
+    public <T> List<T> findObjectsT(Class<T> clazz, List<Cond> conds) {
+        return findObjects(clazz, conds);
+    }
     public <T> List<T> findObjects(Class<?> clazz, List<Cond> conds) {
         return findObjects(clazz, (primalCond) -> primalCond, conds);
     }
 
+    public <T> List<T> findObjectsT(Class<T> clazz, Cond... conds) {
+        return findObjects(clazz,conds);
+    }
     public <T> List<T> findObjects(Class<?> clazz, Cond... conds) {
         return findObjects(clazz, Arrays::asList, conds);
     }
 
+    public <T> T findObjectT(List<Cond> conds, Class<T> clazz) {
+        return findObject(conds,clazz);
+    }
     public <T> T findObject(List<Cond> conds, Class<?> clazz) {
         return findObject(clazz, conds);
     }
 
+    public <T> T findObjectT(Class<T> clazz, List<Cond> conds) {
+        return findObject(clazz, conds);
+    }
     public <T> T findObject(Class<?> clazz, List<Cond> conds) {
         tryLimitOne();
         return MiscUtil.getFirst(findObjects(clazz, (primalCond) -> primalCond, conds));
     }
 
+    public <T> T findObjectT(String table, List<Cond> conds, Class<T> clazz) {
+        return findObject(table,conds,clazz);
+    }
     public <T> T findObject(String table, List<Cond> conds, Class<?> clazz) {
         tryLimitOne();
         return MiscUtil.getFirst(findObjects(table, conds, clazz));
     }
 
+    public <T> T findObjectT(Class<?> clazz, Cond... conds) {
+        return findObject(clazz,conds);
+    }
     public <T> T findObject(Class<?> clazz, Cond... conds) {
         return findObject(TableLoc.findTableName(clazz,getDataSource()), Arrays.asList(conds), clazz);
     }
 
+    public <T> List<T> searchObjectsT(T obj) {
+        return searchObjects(obj);
+    }
     public <T> List<T> searchObjects(Object obj) {
         List<Cond> conds = fromTableDomain(obj);
         Class<?> clazz = obj.getClass();
         return findObjects(clazz, conds);
     }
 
+    public <T> T searchObjectT(T obj) {
+        return searchObject(obj);
+    }
     public <T> T searchObject(Object obj) {
         tryLimitOne();
         return MiscUtil.getFirst(searchObjects(obj));
@@ -637,9 +667,9 @@ public class QueryEntry {
 
     private static List<Cond> combineConds(List<Cond> conds1, List<Cond> conds2) {
         return Stream.of(conds1, conds2)
-                .filter(CollectionUtils::isNotEmpty)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+            .filter(CollectionUtils::isNotEmpty)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
     }
 
     private List<FieldValuePair> toFullFieldValuePair(Map<String, Object> map) {

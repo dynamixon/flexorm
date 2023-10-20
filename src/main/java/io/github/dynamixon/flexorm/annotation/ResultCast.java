@@ -9,5 +9,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ResultCast {
-    Class<? extends ResultCastHandler> value();
+    Class<? extends ResultCastHandler<?>> value();
 }

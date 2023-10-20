@@ -1,15 +1,16 @@
 package io.github.dynamixon.test
 
 import io.github.dynamixon.flexorm.dialect.DialectConst
+import io.github.dynamixon.test.dynamictable.DyTableNameTest
 import io.github.dynamixon.test.fakedb.FakeDBTest
 import io.github.dynamixon.test.h2.H2Test
 import io.github.dynamixon.test.hsqldb.HsqlDbTest
+import io.github.dynamixon.test.metacache.MetaCacheTest
 import io.github.dynamixon.test.mssql.MsSqlTest
 import io.github.dynamixon.test.mysql.MysqlTest
 import io.github.dynamixon.test.pg.PgTest
 import io.github.dynamixon.test.spi.SPITest
 import io.github.dynamixon.test.sqlite.SqliteTest
-import io.github.dynamixon.test.metacache.MetaCacheTest
 import io.github.dynamixon.test.table2java.Table2JavaTest
 import io.github.dynamixon.test.tableloc.TableLocTest
 import org.junit.Test
@@ -51,5 +52,6 @@ class BundledTest {
         namedSqlTest.basicTest()
         namedSqlTest.inParamTest()
         namedSqlTest.cacheTest()
+        DyTableNameTest.test()
     }
 }
