@@ -4,6 +4,7 @@ import io.github.dynamixon.flexorm.enums.CondAndOr
 import io.github.dynamixon.flexorm.logic.SqlBuilder
 import io.github.dynamixon.flexorm.pojo.Cond
 import io.github.dynamixon.flexorm.pojo.InnerCond
+import io.github.dynamixon.flexorm.pojo.Null
 import io.github.dynamixon.flexorm.pojo.SqlValuePart
 import org.apache.commons.lang3.StringUtils
 import org.junit.Test
@@ -167,5 +168,16 @@ class SqlBuilderTest {
         ])
         logger.info("6 sqlValuePart=$sqlValuePart")
         assertEqual(expected,sqlValuePart)
+    }
+
+    @Test
+    void testNull(){
+        def sqlBuilder = new SqlBuilder()
+        def condPart = sqlBuilder.buildCondPart(CondAndOr.AND.value, [new Cond('xxx', Null.instance())])
+        assert condPart.valid()
+        condPart = sqlBuilder.buildCondPart(CondAndOr.AND.value, [new Cond(columnName: 'xxx',compareOpr: 'is null',ignoreNull: false)])
+        assert condPart.valid()
+        condPart = sqlBuilder.buildCondPart(CondAndOr.AND.value, [new Cond(columnName: 'xxx',compareOpr: 'yyy')])
+        assert !condPart.valid()
     }
 }

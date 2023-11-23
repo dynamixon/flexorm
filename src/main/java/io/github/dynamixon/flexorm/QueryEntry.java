@@ -172,15 +172,18 @@ public class QueryEntry {
                 .targetTable(table)
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .build();
-            boolean noCond = CollectionUtils.isEmpty(delCond.getConditionAndList());
-            if(noCond&&!ExtraParamInjector.emptyUpdateCondAllowed()){
+            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeDelete(delCond);
+            if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Delete without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
             }
-            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeDelete(delCond);
             return coreRunner.genericUpdate(sqlPreparedBundle.getSql(), sqlPreparedBundle.getValues());
         } finally {
             ExtraParamInjector.unsetExtraConds();
             ExtraParamInjector.unsetEmptyUpdateCondRestriction();
+
+            ExtraParamInjector.unsetSqlId();
+            ExtraParamInjector.unsetInterceptor();
+            ExtraParamInjector.unsetInterceptorChainMode();
         }
     }
 
@@ -458,17 +461,20 @@ public class QueryEntry {
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
-            boolean noCond = CollectionUtils.isEmpty(upCond.getConditionAndList()) && CollectionUtils.isEmpty(upCond.getConditionOrList());
-            if(noCond&&!ExtraParamInjector.emptyUpdateCondAllowed()){
+            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeUpdate(upCond);
+            if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
             }
-            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeUpdate(upCond);
             return coreRunner.genericUpdate(sqlPreparedBundle.getSql(), sqlPreparedBundle.getValues());
         } finally {
             ExtraParamInjector.unsetExtraConds();
             ExtraParamInjector.unsetExtraOrConds();
             ExtraParamInjector.unsetEmptyUpdateCondRestriction();
             ExtraParamInjector.unsetIgnoreColumnsFromCondForUpdate();
+
+            ExtraParamInjector.unsetSqlId();
+            ExtraParamInjector.unsetInterceptor();
+            ExtraParamInjector.unsetInterceptorChainMode();
         }
     }
 

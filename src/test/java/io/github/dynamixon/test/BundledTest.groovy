@@ -48,6 +48,7 @@ class BundledTest {
     static void localTest(){
         new TableLocTest().test()
         new SqlBuilderTest().testInnerAndOrBasic()
+        new SqlBuilderTest().testNull()
         def namedSqlTest = new NamedSqlTest()
         namedSqlTest.basicTest()
         namedSqlTest.inParamTest()

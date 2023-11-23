@@ -200,7 +200,9 @@ public class SqlBuilder {
         }
         select.append(qc.getTargetTable()).append(" ");
 
+        int origWhereLength = where.length();
         fillWherePart(qc, where, values);
+        sp.setWithCondition(where.length() != origWhereLength);
         fillGroupByPart(qc.getGroupByColumns(), where);
         fillHavingPart(qc.getHavingConds(), where, values);
         fillOrderByPart(qc.getOrderConds(), where);
@@ -215,7 +217,9 @@ public class SqlBuilder {
         List<Object> values = new ArrayList<>();
         StringBuilder delete = new StringBuilder("delete from ").append(cb.getTargetTable());
         StringBuilder where = new StringBuilder(" where 1=1 ");
+        int origWhereLength = where.length();
         fillWherePart(cb, where, values);
+        sp.setWithCondition(where.length() != origWhereLength);
         sp.setSql(cleanSqlCond(delete.append(where).toString()));
         sp.setValues(values.toArray());
         return sp;
@@ -236,7 +240,9 @@ public class SqlBuilder {
                 values.add(value);
             }
             update.deleteCharAt(update.length() - 1);
+            int origWhereLength = where.length();
             fillWherePart(uc, where, values);
+            sp.setWithCondition(where.length() != origWhereLength);
             sp.setSql(cleanSqlCond(update.append(where).toString()));
             sp.setValues(values.toArray());
         }

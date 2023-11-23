@@ -214,6 +214,7 @@ class CommonTest {
                     extraCondDel()
                     delNoCondFail()
                     batchInsertVarArg()
+                    emptyCondBlock()
                     delAll()
                     tx()
                 }catch(Throwable e){
@@ -1482,6 +1483,58 @@ class CommonTest {
             sqlId(verboseSqlId("batchInsertVarArg"))
         ).batchInsert(list.get(0),list.get(1))
         assert insertNum == 2
+    }
+
+    void emptyCondBlock(){
+        logger.info ' -- emptyCondBlock -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        SqlExecutionInterceptor interceptor = new SqlExecutionInterceptor() {
+            @Override
+            void beforeExecution(InterceptorContext interceptorContext) {
+                interceptorContext.setDelegatedResult(1)
+            }
+        }
+        try {
+            qe.prep(
+                sqlId(verboseSqlId("emptyCondBlock step1")),
+                intercept(interceptor)
+            ).updateSelective(record)
+            assert false
+        } catch (e) {
+            assert e instanceof DBException
+            assert e.getMessage().contains('Update without condition')
+        }
+        try {
+            qe.prep(
+                sqlId(verboseSqlId("emptyCondBlock step2")),
+                intercept(interceptor)
+            ).delObjects(getCurrentClass())
+            assert false
+        } catch (e) {
+            assert e instanceof DBException
+            assert e.getMessage().contains('Delete without condition')
+        }
+        try {
+            qe.prep(
+                sqlId(verboseSqlId("emptyCondBlock step3")),
+                intercept(interceptor)
+            ).updateSelective(record,new Cond('id',null))
+            assert false
+        } catch (e) {
+            assert e instanceof DBException
+            assert e.getMessage().contains('Update without condition')
+        }
+        try {
+            qe.prep(
+                sqlId(verboseSqlId("emptyCondBlock step4")),
+                intercept(interceptor)
+            ).delObjects(getCurrentClass(),new Cond('id',null))
+            assert false
+        } catch (e) {
+            assert e instanceof DBException
+            assert e.getMessage().contains('Delete without condition')
+        }
     }
 
     void delAll(){

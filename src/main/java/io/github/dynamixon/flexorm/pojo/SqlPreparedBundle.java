@@ -5,6 +5,7 @@ import java.util.Arrays;
 public class SqlPreparedBundle {
     private String sql;
     private Object[] values;
+    private boolean withCondition;
 
     public SqlPreparedBundle() {
     }
@@ -30,11 +31,20 @@ public class SqlPreparedBundle {
         this.values = values;
     }
 
+    public boolean isWithCondition() {
+        return withCondition;
+    }
+
+    public void setWithCondition(boolean withCondition) {
+        this.withCondition = withCondition;
+    }
+
     @Override
     public String toString() {
         return "SqlPreparedBundle{" +
-                "sql='" + sql + '\'' +
-                ", values=" + Arrays.toString(values) +
-                '}';
+            "sql='" + sql + '\'' +
+            ", values=" + Arrays.toString(values) +
+            ", withCondition=" + withCondition +
+            '}';
     }
 }
