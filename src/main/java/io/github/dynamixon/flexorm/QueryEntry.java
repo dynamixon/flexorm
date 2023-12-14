@@ -1,6 +1,7 @@
 package io.github.dynamixon.flexorm;
 
 import com.google.common.collect.Lists;
+import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableLoc;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
@@ -218,6 +219,7 @@ public class QueryEntry {
         try {
             String sqlId = ExtraParamInjector.getSqlId();
             SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+            SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
             boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
             PagingInjector.dropResult();
             Class<?> resultClass = ExtraParamInjector.getResultClass();
@@ -239,7 +241,7 @@ public class QueryEntry {
             if (PagingInjector.needCount()) {
                 ExtraParamInjector.sqlId(sqlId);
                 if(interceptorSpan){
-                    ExtraParamInjector.intercept(sqlExecutionInterceptor);
+                    ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 }
                 if(CollectionUtils.isNotEmpty(groupByColumns)){
                     qryCondition.setOffset(null);
@@ -312,7 +314,7 @@ public class QueryEntry {
         return MiscUtil.getFirst(findObjects(table, conds, clazz));
     }
 
-    public <T> T findObjectT(Class<?> clazz, Cond... conds) {
+    public <T> T findObjectT(Class<T> clazz, Cond... conds) {
         return findObject(clazz,conds);
     }
     public <T> T findObject(Class<?> clazz, Cond... conds) {
@@ -397,13 +399,14 @@ public class QueryEntry {
         }
         String sqlId = ExtraParamInjector.getSqlId();
         SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+        SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
         boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
         for (List<Map<String, Object>> list : dataMap.values()) {
             List<List<Map<String, Object>>> partitions = Lists.partition(list, bulkSize);
             for (List<Map<String, Object>> partition : partitions) {
                 ExtraParamInjector.sqlId(sqlId);
                 if(interceptorSpan){
-                    ExtraParamInjector.intercept(sqlExecutionInterceptor);
+                    ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 }
                 num += coreRunner.batchInsert(table, partition);
             }
@@ -513,12 +516,13 @@ public class QueryEntry {
         }
         String sqlId = ExtraParamInjector.getSqlId();
         SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+        SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
         boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
         int num;
         num = updateSelective(record, conds);
         if (num == 0) {
             if(interceptorSpan){
-                ExtraParamInjector.intercept(sqlExecutionInterceptor);
+                ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
             }
             ExtraParamInjector.sqlId(sqlId);
             num = insert(record);
