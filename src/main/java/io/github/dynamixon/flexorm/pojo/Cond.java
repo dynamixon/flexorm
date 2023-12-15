@@ -12,6 +12,7 @@ import java.util.List;
  */
 public class Cond {
     private String columnName;
+    private FieldInfoGetter<?> fieldInfoGetter;
     private String compareOpr;
     private Object value;
     private Boolean ignoreNull;
@@ -30,16 +31,47 @@ public class Cond {
         this.andOrToInner = andOrToInner;
     }
 
+    public <T> Cond(FieldInfoGetter<T> fieldInfoGetter, String compareOpr, Object value, Boolean ignoreNull, InnerCond innerCond, CondAndOr andOrToInner) {
+        this.fieldInfoGetter = fieldInfoGetter;
+        this.compareOpr = compareOpr;
+        this.value = value;
+        this.ignoreNull = ignoreNull;
+        this.innerCond = innerCond;
+        this.andOrToInner = andOrToInner;
+    }
+
     public Cond(String columnName, String compareOpr, Object value, Boolean ignoreNull) {
         this(columnName, compareOpr, value, ignoreNull, null, null);
+    }
+
+    public <T> Cond(FieldInfoGetter<T> fieldInfoGetter, String compareOpr, Object value, Boolean ignoreNull) {
+        this(fieldInfoGetter, compareOpr, value, ignoreNull, null, null);
     }
 
     public Cond(String columnName, String compareOpr, Object value) {
         this(columnName, compareOpr, value, true);
     }
 
+    public <T> Cond(FieldInfoGetter<T> fieldInfoGetter, String compareOpr, Object value) {
+        this(fieldInfoGetter, compareOpr, value, true);
+    }
+
     public Cond(String columnName, Object value) {
         this(columnName, "=", value, true);
+    }
+
+    public <T> Cond(FieldInfoGetter<T> fieldInfoGetter, Object value) {
+        this(fieldInfoGetter, "=", value, true);
+    }
+
+    private Cond(Builder builder) {
+        setColumnName(builder.columnName);
+        setFieldInfoGetter(builder.fieldInfoGetter);
+        setCompareOpr(builder.compareOpr);
+        setValue(builder.value);
+        setIgnoreNull(builder.ignoreNull);
+        setInnerCond(builder.innerCond);
+        setAndOrToInner(builder.andOrToInner);
     }
 
     public String getColumnName() {
@@ -48,6 +80,14 @@ public class Cond {
 
     public void setColumnName(String columnName) {
         this.columnName = columnName;
+    }
+
+    public FieldInfoGetter<?> getFieldInfoGetter() {
+        return fieldInfoGetter;
+    }
+
+    public void setFieldInfoGetter(FieldInfoGetter<?> fieldInfoGetter) {
+        this.fieldInfoGetter = fieldInfoGetter;
     }
 
     public String getCompareOpr() {
@@ -114,6 +154,7 @@ public class Cond {
     public String toString() {
         return "Cond{" +
             "columnName='" + columnName + '\'' +
+            ", fieldInfoGetter=" + fieldInfoGetter +
             ", compareOpr='" + compareOpr + '\'' +
             ", value=" + value +
             ", ignoreNull=" + ignoreNull +
@@ -124,6 +165,7 @@ public class Cond {
 
     public static final class Builder {
         private String columnName;
+        private FieldInfoGetter<?> fieldInfoGetter;
         private String compareOpr;
         private Object value;
         private Boolean ignoreNull;
@@ -135,6 +177,11 @@ public class Cond {
 
         public Builder columnName(String columnName) {
             this.columnName = columnName;
+            return this;
+        }
+
+        public Builder fieldInfoGetter(FieldInfoGetter<?> fieldInfoGetter) {
+            this.fieldInfoGetter = fieldInfoGetter;
             return this;
         }
 
@@ -166,6 +213,7 @@ public class Cond {
         public Cond build() {
             Cond cond = new Cond();
             cond.setColumnName(columnName);
+            cond.setFieldInfoGetter(fieldInfoGetter);
             cond.setCompareOpr(compareOpr);
             cond.setValue(value);
             cond.setIgnoreNull(ignoreNull);

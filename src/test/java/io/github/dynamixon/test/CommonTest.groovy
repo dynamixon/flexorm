@@ -199,6 +199,7 @@ class CommonTest {
                     testRefreshTableMetaCacheMulti()
                     testRefreshTableMetaCacheForPackage()
                     testRemoveAllTableMetaCache()
+                    testFieldInfoGetter()
                     insertOne()
                     nullCond()
                     genericNamedParamUpdate()
@@ -1165,6 +1166,11 @@ class CommonTest {
         assert MapUtils.isEmpty(columnToFieldMap)
         assert CollectionUtils.isEmpty(primaryFields)
         assert MapUtils.isEmpty(tableNameMap)
+    }
+
+    void testFieldInfoGetter(){
+        logger.info ' -- testFieldInfoGetter -- '
+        FieldInfoGetterTest.test(qe)
     }
 
     void insertOne(){

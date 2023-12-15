@@ -19,7 +19,7 @@ class DyTableNameTest {
                 GeneralThreadLocal.set('tbl_dynamic_part',dyPart)
                 def queryEntry = QueryEntry.initQueryEntry(
                     CommonInfo.getDataSource(dbType),
-                    new Config(logStack: true, logStackPackages: ['com.github.haflife3.test'])
+                    new Config(logStack: true, logStackPackages: ['io.github.dynamixon.test'])
                 )
                 TableObjectMetaCache.registerTableObjectMeta(false,false,DyTableNameBean.class,queryEntry.getCoreRunner(),'ttt',['id':'id'],['id':'id'],[])
                 String sql = ''
