@@ -169,6 +169,7 @@ public class QueryEntry {
 
     public int delObjects(String table, List<Cond> conds) {
         try {
+            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(getCoreRunner(),conds);
             ConditionBundle delCond = new ConditionBundle.Builder()
                 .targetTable(table)
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
@@ -451,6 +452,7 @@ public class QueryEntry {
 
     public int update(String table, Map<String, Object> updateValueMap, List<Cond> conds) {
         try {
+            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(getCoreRunner(),conds);
             List<FieldValuePair> pairs = toFullFieldValuePair(updateValueMap);
             if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
                 if(CollectionUtils.isNotEmpty(conds)){

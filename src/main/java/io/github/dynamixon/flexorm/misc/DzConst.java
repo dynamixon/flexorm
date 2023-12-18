@@ -10,6 +10,8 @@ public interface DzConst {
 
     String NAMED_PARAM_SQL_PARSE_CACHE_COUNT = "named.param.sql.parse.cache.count";
 
+    String FIELD_INFO_GETTER_CACHE_COUNT = "field.info.getter.cache.count";
+
     String PREFIX = "flexorm_";
 
     String IGNORE_LOG = PREFIX+"ignoreLog";

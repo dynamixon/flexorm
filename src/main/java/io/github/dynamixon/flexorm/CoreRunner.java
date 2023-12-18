@@ -239,6 +239,7 @@ public class CoreRunner {
         Class<?> resultClass = qryCondition.getResultClass();
         List<T> list = null;
         try {
+            resolveColumnNameFromFieldInfoGetter(qryCondition);
             SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
             String sql = sqlPreparedBundle.getSql();
             Object[] values = sqlPreparedBundle.getValues();
@@ -255,6 +256,7 @@ public class CoreRunner {
 
     public int genericCount(QueryConditionBundle qryCondition){
         try {
+            resolveColumnNameFromFieldInfoGetter(qryCondition);
             SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
             String sql = sqlPreparedBundle.getSql();
             Object[] values = sqlPreparedBundle.getValues();
@@ -380,6 +382,15 @@ public class CoreRunner {
             throw new DBException(e);
         }
         return map;
+    }
+
+    private void resolveColumnNameFromFieldInfoGetter(QueryConditionBundle qryCondition){
+        if(qryCondition==null){
+            return;
+        }
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionOrList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionOrList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getHavingConds());
     }
 
     private void log(String sql, InterceptorContext interceptorContext, Object output, String outputDenote, long elapsed) {

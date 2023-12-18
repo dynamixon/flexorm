@@ -8,5 +8,5 @@ import java.io.Serializable;
  */
 public interface FieldInfoGetter<T> extends Serializable {
 
-    Object get(T source);
+    Object get(T obj);
 }
