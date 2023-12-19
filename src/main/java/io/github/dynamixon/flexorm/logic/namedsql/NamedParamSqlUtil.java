@@ -8,6 +8,7 @@ import io.github.dynamixon.flexorm.misc.DzConst;
 import io.github.dynamixon.flexorm.pojo.SqlPreparedBundle;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -17,10 +18,10 @@ import java.util.concurrent.ExecutionException;
  */
 public class NamedParamSqlUtil {
 
-    private static final LoadingCache<String,ParsedSql> namedParamSqlParseCache = CacheBuilder.newBuilder().maximumSize(cacheCount()).build(
+    private static final LoadingCache<String,ParsedSql> NAMED_PARAM_SQL_PARSE_CACHE = CacheBuilder.newBuilder().maximumSize(cacheCount()).build(
         new CacheLoader<String, ParsedSql>() {
             @Override
-            public ParsedSql load(String namedParamSql){
+            public ParsedSql load(@Nonnull String namedParamSql){
                 return NamedParameterUtils.parseSqlStatement(namedParamSql);
             }
         }
@@ -29,7 +30,7 @@ public class NamedParamSqlUtil {
     public static long cacheCount(){
         String cacheCountStr = System.getProperty(DzConst.NAMED_PARAM_SQL_PARSE_CACHE_COUNT);
         if(StringUtils.isBlank(cacheCountStr)){
-            return 256L;
+            return 4096L;
         }
         return Long.parseLong(cacheCountStr);
     }
@@ -38,7 +39,7 @@ public class NamedParamSqlUtil {
         MapSqlParameterSource mapSqlParameterSource = new MapSqlParameterSource(paramMap);
         ParsedSql parsedSql;
         try {
-            parsedSql = namedParamSqlParseCache.get(namedParamSql);
+            parsedSql = NAMED_PARAM_SQL_PARSE_CACHE.get(namedParamSql);
         } catch (ExecutionException e) {
             throw new DBException(e);
         }

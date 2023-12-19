@@ -52,7 +52,7 @@ class NamedSqlTest {
     @Test
     void cacheTest(){
         def clazz = NamedParamSqlUtil.class
-        def field = clazz.getDeclaredField('namedParamSqlParseCache')
+        def field = clazz.getDeclaredField('NAMED_PARAM_SQL_PARSE_CACHE')
         field.setAccessible(true)
         LoadingCache<String, ParsedSql> cache =  (LoadingCache<String, ParsedSql>)field.get(null)
         cache.invalidateAll()

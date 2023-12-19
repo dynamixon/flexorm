@@ -25,7 +25,7 @@ class TableLocTest {
         tableClassesTestMore()
     }
 
-    void basicTest(){
+    static void basicTest(){
         String packageName = "io.github.dynamixon.dataobject"
         String tableName = "dummy_table"
         def dataSource = CommonInfo.getDataSource(DialectConst.HSQLDB)
@@ -39,7 +39,7 @@ class TableLocTest {
         }
     }
 
-    void tableClassesTest(){
+    static void tableClassesTest(){
         List<Class<?>> noSuchTableClasses = [NoSuchTable, NoSuchTableGv, SubNoSuchTable, SubNoSuchTableGv]
         String packageName = "io.github.dynamixon.dataobject"
         def tableClasses = TableLoc.tableClasses(packageName)
@@ -49,7 +49,7 @@ class TableLocTest {
         assert tableClasses.size() > noSuchTableClasses.size()
     }
 
-    void tableClassesTestMore(){
+    static void tableClassesTestMore(){
         String packageName = "io.github.dynamixon.dataobject"
         List<Class<?>> noAnnoTableClasses = [NoAnnoTable, NoAnnoTableGv, SubNoAnnoTable, SubNoAnnoTableGv]
         def tableNameMap = TableObjectMetaCache.getTableNameMap(CommonInfo.getDataSource(DialectConst.H2))

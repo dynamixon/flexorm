@@ -388,7 +388,7 @@ public class CoreRunner {
         if(qryCondition==null){
             return;
         }
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionOrList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionAndList());
         FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionOrList());
         FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getHavingConds());
     }
