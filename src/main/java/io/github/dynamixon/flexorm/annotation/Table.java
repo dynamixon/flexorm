@@ -22,5 +22,5 @@ public @interface Table {
      * Whether the fields of the Class should be mapped to table columns with or without {@link Column} annotation.
      * If a field is annotated with {@link Column}, The attributes from {@link Column} will take precedence.
      */
-    boolean autoColumnDetection() default false;
+    boolean autoColumnDetection() default true;
 }
