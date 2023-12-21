@@ -30,7 +30,7 @@ public class NamedParamSqlUtil {
     public static long cacheCount(){
         String cacheCountStr = System.getProperty(DzConst.NAMED_PARAM_SQL_PARSE_CACHE_COUNT);
         if(StringUtils.isBlank(cacheCountStr)){
-            return 4096L;
+            return 1024L;
         }
         return Long.parseLong(cacheCountStr);
     }

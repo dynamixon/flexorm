@@ -37,7 +37,7 @@ public class FieldInfoMethodRefUtil {
     public static long cacheCount(){
         String cacheCountStr = System.getProperty(DzConst.FIELD_INFO_GETTER_CACHE_COUNT);
         if(StringUtils.isBlank(cacheCountStr)){
-            return 16384L;
+            return 1024L;
         }
         return Long.parseLong(cacheCountStr);
     }
