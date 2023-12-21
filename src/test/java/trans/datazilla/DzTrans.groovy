@@ -90,13 +90,14 @@ class DzTrans{
         return [
             //pom
                 //version !!! CHANGE ACCORDINGLY !!!
-            '<version>1.2.3-SNAPSHOT</version>':'<version>1.4.8-SNAPSHOT</version>',
+            '<version>1.3.0</version>':'<version>1.4.8</version>',
             '<email>ktsny@163.com</email>':'<email>halflife3@163.com</email>',
             'github.com/dynamixon/flexorm.git':'github.com/halflife3/datazilla.git',
             'https://s01.oss.sonatype.org/':'https://oss.sonatype.org/',
             '<name>dynamixon</name>':'<name>maojianfeng</name>',
 
             //general
+            '/io/github/dynamixon/':'/com/github/haflife3/',
             'io.github.dynamixon.flexorm':'com.github.haflife3.datazilla',
             'io.github.dynamixon':'com.github.haflife3',
             'flexorm':'datazilla'

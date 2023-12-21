@@ -1171,7 +1171,7 @@ class CommonTest {
     void testFieldInfoGetter(){
         logger.info ' -- testFieldInfoGetter -- '
         new FieldInfoGetterGroovyTest(commonTest: this).test()
-        new FieldInfoGetterJavaTest(this).test()
+        new FieldInfoGetterJavaTest(qe).test()
     }
 
     void insertOne(){

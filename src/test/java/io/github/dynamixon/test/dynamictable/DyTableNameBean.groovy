@@ -1,15 +1,21 @@
 package io.github.dynamixon.test.dynamictable;
 
-import io.github.dynamixon.flexorm.annotation.Table;
-import lombok.Data;
+import io.github.dynamixon.flexorm.annotation.Table
 
 /**
  * @author Jianfeng.Mao2
  * @date 23-10-20
  */
-@Data
 @Table(value = "tbl_PLACEHOLDER",tableNameDynamic = true, tableNameHandlerClass = TestDyTableNameHandler.class, autoColumnDetection = true)
-public class DyTableNameBean {
+class DyTableNameBean {
 
-    private String id;
+    private String id
+
+    String getId() {
+        return id
+    }
+
+    void setId(String id) {
+        this.id = id
+    }
 }

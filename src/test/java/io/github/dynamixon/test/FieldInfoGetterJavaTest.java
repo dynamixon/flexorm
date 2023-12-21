@@ -19,14 +19,13 @@ import java.util.List;
  * @date 23-12-15
  */
 public class FieldInfoGetterJavaTest{
-    private final CommonTest commonTest;
+    private final QueryEntry qe;
 
-    public FieldInfoGetterJavaTest(CommonTest commonTest) {
-        this.commonTest = commonTest;
+    public FieldInfoGetterJavaTest(QueryEntry qe) {
+        this.qe = qe;
     }
 
     public void test(){
-        QueryEntry qe = commonTest.qe;
         Cond cond = new Cond(CustomId::getId, "1");
         cond.setInnerCond(new InnerCond(CondAndOr.AND, Collections.singletonList(new Cond(CustomId::getId,"2"))));
         FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(qe.getCoreRunner(), cond);
@@ -46,7 +45,7 @@ public class FieldInfoGetterJavaTest{
             e.printStackTrace();
             assert false;
         }
-        int count = qe.count(CommonTest.getCurrentClass(), new Cond(CustomId::getId, id));
+        int count = qe.count(GeneralThreadLocal.get("CurrentClass"), new Cond(CustomId::getId, id));
         assert count == 1;
     }
 }
