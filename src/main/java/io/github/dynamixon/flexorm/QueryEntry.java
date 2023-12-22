@@ -2,7 +2,6 @@ package io.github.dynamixon.flexorm;
 
 import com.google.common.collect.Lists;
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
-import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableLoc;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
 import io.github.dynamixon.flexorm.logic.namedsql.NamedParamSqlUtil;
@@ -59,7 +58,7 @@ public class QueryEntry {
     }
 
     public String getDbType() {
-        return coreRunner.getDbType();
+        return coreRunner.getDialectType();
     }
 
     public void setConfig(Config config){
@@ -169,12 +168,12 @@ public class QueryEntry {
 
     public int delObjects(String table, List<Cond> conds) {
         try {
-            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(getCoreRunner(),conds);
+            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conds);
             ConditionBundle delCond = new ConditionBundle.Builder()
                 .targetTable(table)
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .build();
-            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeDelete(delCond);
+            SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeDelete(delCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Delete without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
             }
@@ -208,8 +207,18 @@ public class QueryEntry {
         return delObjects(clazz, Arrays::asList, conds);
     }
 
+    @SuppressWarnings({"unchecked"})
     public <T> List<T> genericQry(QueryConditionBundle qryCondition) {
-        return coreRunner.genericQry(qryCondition);
+        Class<?> resultClass = qryCondition.getResultClass();
+        resolveColumnNameFromFieldInfoGetter(qryCondition);
+        SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
+        String sql = sqlPreparedBundle.getSql();
+        Object[] values = sqlPreparedBundle.getValues();
+        if (resultClass.equals(Map.class)) {
+            return (List<T>) genericQry(sql, values);
+        } else {
+            return genericQry(sql, (Class<T>)resultClass, values);
+        }
     }
 
     public <T> List<T> findObjectsT(String table, List<Cond> conds, Class<T> clazz) {
@@ -248,7 +257,9 @@ public class QueryEntry {
                     qryCondition.setOffset(null);
                     qryCondition.setLimit(null);
                     qryCondition.setOrderConds(null);
-                    PagingInjector.setCount(coreRunner.genericCount(qryCondition));
+                    resolveColumnNameFromFieldInfoGetter(qryCondition);
+                    SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
+                    PagingInjector.setCount(coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues()));
                 }else {
                     QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
                         .targetTable(qryCondition.getTargetTable())
@@ -452,7 +463,7 @@ public class QueryEntry {
 
     public int update(String table, Map<String, Object> updateValueMap, List<Cond> conds) {
         try {
-            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(getCoreRunner(),conds);
+            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conds);
             List<FieldValuePair> pairs = toFullFieldValuePair(updateValueMap);
             if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
                 if(CollectionUtils.isNotEmpty(conds)){
@@ -466,7 +477,7 @@ public class QueryEntry {
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
-            SqlPreparedBundle sqlPreparedBundle = new SqlBuilder(coreRunner).composeUpdate(upCond);
+            SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
             }
@@ -637,7 +648,7 @@ public class QueryEntry {
     }
 
     public List<Cond> buildConds(Object obj) {
-        return new SqlBuilder(coreRunner).buildConds(obj);
+        return coreRunner.getSqlBuilder().buildConds(obj);
     }
 
     private List<Cond> initCondsByFields(Object obj, String[] fieldOrColumnArr) {
@@ -780,5 +791,14 @@ public class QueryEntry {
         }
         ExtraParamInjector.selectColumns("1 as count");
         ExtraParamInjector.resultClass(CountInfo.class);
+    }
+
+    private void resolveColumnNameFromFieldInfoGetter(QueryConditionBundle qryCondition){
+        if(qryCondition==null){
+            return;
+        }
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getConditionAndList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getConditionOrList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getHavingConds());
     }
 }

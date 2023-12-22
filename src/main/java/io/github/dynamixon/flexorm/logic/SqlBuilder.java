@@ -278,9 +278,6 @@ public class SqlBuilder {
                 if (StringUtils.isBlank(columnName)) {
                     columnName = field.getName();
                 }
-                if (StringUtils.isBlank(columnName)) {
-                    columnName = field.getName();
-                }
                 if (opr.contains("like")) {
                     value = "%" + value + "%";
                 }

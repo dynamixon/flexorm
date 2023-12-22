@@ -11,10 +11,7 @@ import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
 import io.github.dynamixon.flexorm.misc.*;
-import io.github.dynamixon.flexorm.pojo.Config;
-import io.github.dynamixon.flexorm.pojo.CountInfo;
-import io.github.dynamixon.flexorm.pojo.QueryConditionBundle;
-import io.github.dynamixon.flexorm.pojo.SqlPreparedBundle;
+import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.BasicRowProcessor;
 import org.apache.commons.dbutils.QueryRunner;
@@ -34,7 +31,7 @@ public class CoreRunner {
     private static final Logger logger = LoggerFactory.getLogger(CoreRunner.class);
     private final QueryRunner queryRunner;
     private final SqlBuilder sqlBuilder;
-    private String dbType;
+    private String dialectType;
     private BatchInserter batchInserter;
     private Pagination pagination;
     private OfflinePagination offlinePagination;
@@ -44,24 +41,24 @@ public class CoreRunner {
         this(queryRunner, null, null);
     }
 
-    public CoreRunner(QueryRunner queryRunner, String dbType) {
-        this(queryRunner, dbType, null);
+    public CoreRunner(QueryRunner queryRunner, String dialectType) {
+        this(queryRunner, dialectType, null);
     }
 
     public CoreRunner(QueryRunner queryRunner, Config config) {
         this(queryRunner, null, config);
     }
 
-    public CoreRunner(QueryRunner queryRunner, String dbType, Config config) {
+    public CoreRunner(QueryRunner queryRunner, String dialectType, Config config) {
         this.queryRunner = queryRunner;
         this.config = config==null?Config.defaultConfig():config;
-        if (dbType == null) {
-            this.dbType = new PlatformUtils().determineDatabaseType(queryRunner.getDataSource());
-            if (DialectFactory.SUPPORTED_DB.stream().noneMatch(this.dbType::equalsIgnoreCase)) {
-                this.dbType = DialectConst.DEFAULT;
+        if (dialectType == null) {
+            this.dialectType = new PlatformUtils().determineDatabaseType(queryRunner.getDataSource());
+            if (DialectFactory.SUPPORTED_DB.stream().noneMatch(this.dialectType::equalsIgnoreCase)) {
+                this.dialectType = DialectConst.DEFAULT;
             }
         } else {
-            this.dbType = dbType;
+            this.dialectType = dialectType;
         }
         initDialect();
         sqlBuilder = new SqlBuilder(this);
@@ -71,7 +68,7 @@ public class CoreRunner {
         boolean batchInserterMatch = false;
         ServiceLoader<BatchInserter> batchInserters = ServiceLoader.load(BatchInserter.class);
         for (BatchInserter batchInserter : batchInserters) {
-            if (batchInserter.match(dbType)) {
+            if (batchInserter.match(dialectType)) {
                 this.batchInserter = batchInserter;
                 batchInserterMatch = true;
                 break;
@@ -84,7 +81,7 @@ public class CoreRunner {
         boolean paginationMatch = false;
         ServiceLoader<Pagination> paginations = ServiceLoader.load(Pagination.class);
         for (Pagination pagination : paginations) {
-            if (pagination.match(dbType)) {
+            if (pagination.match(dialectType)) {
                 this.pagination = pagination;
                 paginationMatch = true;
                 break;
@@ -97,7 +94,7 @@ public class CoreRunner {
         boolean offlinePaginationMatch = false;
         ServiceLoader<OfflinePagination> offlinePaginations = ServiceLoader.load(OfflinePagination.class);
         for (OfflinePagination offlinePagination : offlinePaginations) {
-            if (offlinePagination.match(dbType)) {
+            if (offlinePagination.match(dialectType)) {
                 this.offlinePagination = offlinePagination;
                 offlinePaginationMatch = true;
                 break;
@@ -113,8 +110,8 @@ public class CoreRunner {
         logger.info("batchInserterMatch[{}],batchInserter[{}];paginationMatch[{}],pagination[{}];offlinePaginationMatch[{}],offlinePagination[{}]", batchInserterMatch, batchInserter, paginationMatch, pagination, offlinePaginationMatch, offlinePagination);
     }
 
-    public String getDbType() {
-        return dbType;
+    public String getDialectType() {
+        return dialectType;
     }
 
     public DataSource getDataSource() {
@@ -123,6 +120,10 @@ public class CoreRunner {
 
     public QueryRunner getQueryRunner() {
         return queryRunner;
+    }
+
+    public SqlBuilder getSqlBuilder() {
+        return sqlBuilder;
     }
 
     public BatchInserter getBatchInserter() {
@@ -150,6 +151,20 @@ public class CoreRunner {
             TableObjectMetaCache.initTableObjectMeta(clazz, this);
         }
         return genericQry(sql, new BeanListHandler<>(clazz, new BasicRowProcessor(MoreGenerousBeanProcessorFactory.populateBeanProcessor(clazz,getDataSource()))), values);
+    }
+
+    public List<Map<String, Object>> genericQry(String sql, Object[] values) {
+        return genericQry(sql, new MapListHandler(), values);
+    }
+
+    public int genericCount(String sql,Object[] values){
+        try {
+            String countSql = "select count(*) as count from ("+sql+") count_tmp_tbl";
+            List<CountInfo> countInfos = genericQry(countSql,CountInfo.class,values);
+            return countInfos.get(0).getCount();
+        } catch (Exception e) {
+            throw new DBException(e);
+        }
     }
 
     public <T> T genericQry(String sql, ResultSetHandler<T> resultSetHandler, Object[] values) {
@@ -185,31 +200,6 @@ public class CoreRunner {
         return result;
     }
 
-    public List<Map<String, Object>> genericQry(String sql, Object[] values) {
-        List<Map<String, Object>> list = null;
-        InterceptorContext interceptorContext = null;
-        try {
-            interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
-            sql = getIdSql(interceptorContext.getSql());
-            long start = System.currentTimeMillis();
-            if(interceptorContext.isResultDelegate()){
-                list = interceptorContext.getGenericDelegateResult();
-            }else {
-                list = queryRunner.query(sql, new MapListHandler(), interceptorContext.getValues());
-                interceptorContext.setRealResult(list);
-            }
-            long end = System.currentTimeMillis();
-            long timeCost = end - start;
-            interceptorContext.setTimeCost(timeCost);
-            log(sql, interceptorContext, list, "RESULT-SIZE", timeCost);
-        } catch (SQLException e) {
-            throw new DBException(e);
-        }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-        }
-        return list;
-    }
-
     public int genericUpdate(String sql, Object[] values) {
         int affected = 0;
         InterceptorContext interceptorContext = null;
@@ -235,41 +225,7 @@ public class CoreRunner {
         return affected;
     }
 
-    public <T> List<T> genericQry(QueryConditionBundle qryCondition) {
-        Class<?> resultClass = qryCondition.getResultClass();
-        List<T> list = null;
-        try {
-            resolveColumnNameFromFieldInfoGetter(qryCondition);
-            SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
-            String sql = sqlPreparedBundle.getSql();
-            Object[] values = sqlPreparedBundle.getValues();
-            if (resultClass.equals(Map.class)) {
-                list = (List<T>) genericQry(sql, values);
-            } else {
-                list = genericQry(sql, (Class<T>) resultClass, values);
-            }
-        } catch (Exception e) {
-            throw new DBException(e);
-        }
-        return list;
-    }
-
-    public int genericCount(QueryConditionBundle qryCondition){
-        try {
-            resolveColumnNameFromFieldInfoGetter(qryCondition);
-            SqlPreparedBundle sqlPreparedBundle = sqlBuilder.composeSelect(qryCondition);
-            String sql = sqlPreparedBundle.getSql();
-            Object[] values = sqlPreparedBundle.getValues();
-            String countSql = "select count(*) as count from ("+sql+") count_tmp_tbl";
-            List<CountInfo> countInfos = genericQry(countSql,CountInfo.class,values);
-            return countInfos.get(0).getCount();
-        } catch (Exception e) {
-            throw new DBException(e);
-        }
-    }
-
-    public int insert(String table, Map<String, Object> valueMap) {
-        int affectedNum = 0;
+    private SqlValuePart composeInsertSqlValuePart(String table, Map<String, Object> valueMap){
         StringBuilder sql = new StringBuilder("insert into " + table + " (");
         StringBuilder valueSql = new StringBuilder(" values( ");
         List<Object> values = new ArrayList<>();
@@ -285,8 +241,12 @@ public class CoreRunner {
         sql = new StringBuilder(StringUtils.stripEnd(sql.toString(), ",") + ") ");
         valueSql = new StringBuilder(StringUtils.stripEnd(valueSql.toString(), ",") + ") ");
         sql.append(valueSql);
-        affectedNum = genericUpdate(sql.toString(), values.toArray());
-        return affectedNum;
+        return new SqlValuePart(sql.toString(),values);
+    }
+
+    public int insert(String table, Map<String, Object> valueMap) {
+        SqlValuePart sqlValuePart = composeInsertSqlValuePart(table, valueMap);
+        return genericUpdate(sqlValuePart.getSqlPart(), sqlValuePart.getValueParts().toArray());
     }
 
     public <T> T insertWithReturn(String table,Integer columnIndex, String columnName, Map<String, Object> valueMap) {
@@ -294,33 +254,19 @@ public class CoreRunner {
         T rt = null;
         InterceptorContext interceptorContext = null;
         try {
-            StringBuilder sql = new StringBuilder("insert into " + table + " (");
-            StringBuilder valueSql = new StringBuilder(" values( ");
-            List<Object> values = new ArrayList<>();
-            for (Map.Entry<String, Object> entry : valueMap.entrySet()) {
-                String field = entry.getKey();
-                Object value = entry.getValue();
-                if (value != null) {
-                    sql.append(field).append(",");
-                    valueSql.append("?,");
-                    values.add(value);
-                }
-            }
-            sql = new StringBuilder(StringUtils.stripEnd(sql.toString(), ",") + ") ");
-            valueSql = new StringBuilder(StringUtils.stripEnd(valueSql.toString(), ",") + ") ");
-            sql.append(valueSql);
-            Object[] valueArr = values.toArray();
-            ScalarHandler<T> scalarHandler;
-            if(StringUtils.isBlank(columnName)){
-                scalarHandler = new ScalarHandler<>(columnIndex==null?1:columnIndex);
-            }else {
-                scalarHandler = new ScalarHandler<>(columnName);
-            }
-            interceptorContext = initInterceptorContext(sql.toString(),valueArr,config.getGlobalSqlExecutionInterceptor());
-            sql = new StringBuilder(getIdSql(interceptorContext.getSql()));
+            SqlValuePart sqlValuePart = composeInsertSqlValuePart(table, valueMap);
+            Object[] valueArr = sqlValuePart.getValueParts().toArray();
+            interceptorContext = initInterceptorContext(sqlValuePart.getSqlPart(),valueArr,config.getGlobalSqlExecutionInterceptor());
+            StringBuilder sql = new StringBuilder(getIdSql(interceptorContext.getSql()));
             if(interceptorContext.isResultDelegate()){
                 rt = interceptorContext.getGenericDelegateResult();
             }else {
+                ScalarHandler<T> scalarHandler;
+                if(StringUtils.isBlank(columnName)){
+                    scalarHandler = new ScalarHandler<>(columnIndex==null?1:columnIndex);
+                }else {
+                    scalarHandler = new ScalarHandler<>(columnName);
+                }
                 rt = queryRunner.insert(sql.toString(), scalarHandler, interceptorContext.getValues());
                 interceptorContext.setRealResult(rt);
             }
@@ -382,15 +328,6 @@ public class CoreRunner {
             throw new DBException(e);
         }
         return map;
-    }
-
-    private void resolveColumnNameFromFieldInfoGetter(QueryConditionBundle qryCondition){
-        if(qryCondition==null){
-            return;
-        }
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionAndList());
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getConditionOrList());
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(this,qryCondition.getHavingConds());
     }
 
     private void log(String sql, InterceptorContext interceptorContext, Object output, String outputDenote, long elapsed) {
