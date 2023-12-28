@@ -31,4 +31,12 @@ public class MethodRef {
     public void setClazz(Class<?> clazz) {
         this.clazz = clazz;
     }
+
+    @Override
+    public String toString() {
+        return "MethodRef{" +
+            "methodName='" + methodName + '\'' +
+            ", clazz=" + clazz +
+            '}';
+    }
 }

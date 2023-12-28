@@ -9,6 +9,10 @@ import io.github.dynamixon.flexorm.misc.GeneralThreadLocal;
 import io.github.dynamixon.flexorm.misc.MiscUtil;
 import io.github.dynamixon.flexorm.pojo.Cond;
 import io.github.dynamixon.flexorm.pojo.InnerCond;
+import io.github.dynamixon.flexorm.pojo.MethodRef;
+import io.github.dynamixon.test.methodref.Child;
+import io.github.dynamixon.test.methodref.GChild;
+import io.github.dynamixon.test.methodref.Parent;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,5 +51,19 @@ public class FieldInfoGetterJavaTest{
         }
         int count = qe.count(GeneralThreadLocal.get("CurrentClass"), new Cond(CustomId::getId, id));
         assert count == 1;
+    }
+
+    public static void extraTest(){
+        Cond cond = new Cond(GChild::getName, "2");
+        MethodRef methodRef = FieldInfoMethodRefUtil.getMethodRefFromJava(cond.getFieldInfoGetter());
+        assert methodRef.getClazz() == GChild.class;
+
+        cond = new Cond(Child::getName, "2");
+        methodRef = FieldInfoMethodRefUtil.getMethodRefFromJava(cond.getFieldInfoGetter());
+        assert methodRef.getClazz() == Child.class;
+
+        cond = new Cond(Parent::getName, "2");
+        methodRef = FieldInfoMethodRefUtil.getMethodRefFromJava(cond.getFieldInfoGetter());
+        assert methodRef.getClazz() == Parent.class;
     }
 }

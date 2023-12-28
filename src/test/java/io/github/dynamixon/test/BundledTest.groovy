@@ -54,5 +54,7 @@ class BundledTest {
         namedSqlTest.inParamTest()
         namedSqlTest.cacheTest()
         DyTableNameTest.test()
+        FieldInfoGetterJavaTest.extraTest()
+        FieldInfoGetterGroovyTest.extraTest()
     }
 }

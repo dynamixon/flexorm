@@ -5,15 +5,13 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.github.dynamixon.flexorm.CoreRunner;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
-import io.github.dynamixon.flexorm.pojo.Cond;
-import io.github.dynamixon.flexorm.pojo.FieldInfoGetter;
-import io.github.dynamixon.flexorm.pojo.InnerCond;
-import io.github.dynamixon.flexorm.pojo.MethodRef;
+import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -124,21 +122,29 @@ public class FieldInfoMethodRefUtil {
         }
     }
 
-    private static MethodRef getMethodRefFromJava(FieldInfoGetter<?> getter) {
+    public static MethodRef getMethodRefFromJava(FieldInfoGetter<?> getter) {
         try {
             Method writeReplace = getter.getClass().getDeclaredMethod("writeReplace");
             writeReplace.setAccessible(Boolean.TRUE);
             SerializedLambda serializedLambda = (SerializedLambda) writeReplace.invoke(getter);
+            Class<?> tableClass;
             String implMethodName = serializedLambda.getImplMethodName();
-            String implClass = serializedLambda.getImplClass();
-            Class<?> tableClass = Class.forName(implClass.replace("/","."));
+            MethodType methodType = MethodType.fromMethodDescriptorString(
+                serializedLambda.getInstantiatedMethodType(), Thread.currentThread().getContextClassLoader());
+            int parameterCount = methodType.parameterCount();
+            if(parameterCount>0){
+                tableClass = methodType.parameterType(0);
+            }else {
+                String implClass = serializedLambda.getImplClass();
+                tableClass = Class.forName(implClass.replace("/","."));
+            }
             return new MethodRef(implMethodName,tableClass);
         } catch (Exception e) {
             throw new RuntimeException("Failed trying construct method reference from java",e);
         }
     }
 
-    private static MethodRef getMethodRefFromGroovyProxy(Object proxy) {
+    public static MethodRef getMethodRefFromGroovyProxy(Object proxy) {
         try {
             Field h = proxy.getClass().getSuperclass().getDeclaredField("h");
             h.setAccessible(true);
