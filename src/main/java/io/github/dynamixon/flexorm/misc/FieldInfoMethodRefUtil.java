@@ -53,6 +53,9 @@ public class FieldInfoMethodRefUtil {
                 if(cond==null){
                     continue;
                 }
+                if(StringUtils.isNotBlank(cond.getColumnName())){
+                    continue;
+                }
                 InnerCond innerCond = cond.getInnerCond();
                 if(innerCond!=null){
                     resolveColumnNameFromFieldInfoGetter(coreRunner,innerCond.getInnerCondList());

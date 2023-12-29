@@ -61,6 +61,10 @@ public class QueryEntry {
         return coreRunner.getDialectType();
     }
 
+    public String getDialectType() {
+        return coreRunner.getDialectType();
+    }
+
     public void setConfig(Config config){
         if(coreRunner==null){
             throw new DBException("CoreRunner hasn't been initialized!");
@@ -168,11 +172,12 @@ public class QueryEntry {
 
     public int delObjects(String table, List<Cond> conds) {
         try {
-            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conds);
             ConditionBundle delCond = new ConditionBundle.Builder()
                 .targetTable(table)
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
+                .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
+            resolveColumnNameFromFieldInfoGetterBase(delCond);
             SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeDelete(delCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Delete without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -180,6 +185,7 @@ public class QueryEntry {
             return coreRunner.genericUpdate(sqlPreparedBundle.getSql(), sqlPreparedBundle.getValues());
         } finally {
             ExtraParamInjector.unsetExtraConds();
+            ExtraParamInjector.unsetExtraOrConds();
             ExtraParamInjector.unsetEmptyUpdateCondRestriction();
 
             ExtraParamInjector.unsetSqlId();
@@ -257,7 +263,6 @@ public class QueryEntry {
                     qryCondition.setOffset(null);
                     qryCondition.setLimit(null);
                     qryCondition.setOrderConds(null);
-                    resolveColumnNameFromFieldInfoGetter(qryCondition);
                     SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
                     PagingInjector.setCount(coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues()));
                 }else {
@@ -463,7 +468,6 @@ public class QueryEntry {
 
     public int update(String table, Map<String, Object> updateValueMap, List<Cond> conds) {
         try {
-            FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conds);
             List<FieldValuePair> pairs = toFullFieldValuePair(updateValueMap);
             if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
                 if(CollectionUtils.isNotEmpty(conds)){
@@ -477,6 +481,7 @@ public class QueryEntry {
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
+            resolveColumnNameFromFieldInfoGetterBase(upCond);
             SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -797,8 +802,15 @@ public class QueryEntry {
         if(qryCondition==null){
             return;
         }
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getConditionAndList());
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getConditionOrList());
+        resolveColumnNameFromFieldInfoGetterBase(qryCondition);
         FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getHavingConds());
+    }
+
+    private void resolveColumnNameFromFieldInfoGetterBase(ConditionBundle conditionBundle){
+        if(conditionBundle==null){
+            return;
+        }
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionAndList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionOrList());
     }
 }
