@@ -90,7 +90,7 @@ class DzTrans{
         return [
             //pom
                 //version !!! CHANGE ACCORDINGLY !!!
-            '<version>1.3.0</version>':'<version>1.4.8</version>',
+            '<version>1.3.1</version>':'<version>1.4.9</version>',
             '<email>ktsny@163.com</email>':'<email>halflife3@163.com</email>',
             'github.com/dynamixon/flexorm.git':'github.com/halflife3/datazilla.git',
             'https://s01.oss.sonatype.org/':'https://oss.sonatype.org/',
