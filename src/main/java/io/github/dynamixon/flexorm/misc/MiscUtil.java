@@ -77,7 +77,9 @@ public class MiscUtil {
 
     public static void setValue(Object target,Field field,Object value) throws Exception {
         if(target!=null){
-            field.setAccessible(true);
+            if(!field.isAccessible()){
+                field.setAccessible(true);
+            }
             field.set(target,value);
         }
     }
