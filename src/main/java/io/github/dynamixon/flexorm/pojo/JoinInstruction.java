@@ -1,5 +1,7 @@
 package io.github.dynamixon.flexorm.pojo;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -7,17 +9,43 @@ import java.util.List;
  * @date 24-2-4
  */
 public class JoinInstruction {
-    private String joinType;
+    private String joinMethod;
     private String tableName;
-    private String alias;
+    private String tableAlias;
     private List<Cond> joinConds;
 
-    public String getJoinType() {
-        return joinType;
+    public JoinInstruction() {
     }
 
-    public void setJoinType(String joinType) {
-        this.joinType = joinType;
+    public JoinInstruction(String joinMethod, String tableName, String tableAlias, List<Cond> joinConds) {
+        this.joinMethod = joinMethod;
+        this.tableName = tableName;
+        this.tableAlias = tableAlias;
+        this.joinConds = joinConds;
+    }
+
+    public JoinInstruction(String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
+        this("left join", tableName, tableAlias, mainTableCol, joinTableCol);
+    }
+
+    public JoinInstruction(String joinMethod, String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
+        this(joinMethod, tableName, tableAlias, Collections.singletonList(new Cond.Builder().columnName(mainTableCol).compareOpr(" = "+joinTableCol).ignoreNull(true).build()));
+    }
+
+    public JoinInstruction(String tableName,String tableAlias, Cond ... conds) {
+        this("left join", tableName, tableAlias, Arrays.asList(conds));
+    }
+
+    public JoinInstruction(String joinMethod, String tableName,String tableAlias, Cond ... conds) {
+        this(joinMethod, tableName, tableAlias, Arrays.asList(conds));
+    }
+
+    public String getJoinMethod() {
+        return joinMethod;
+    }
+
+    public void setJoinMethod(String joinMethod) {
+        this.joinMethod = joinMethod;
     }
 
     public String getTableName() {
@@ -28,12 +56,12 @@ public class JoinInstruction {
         this.tableName = tableName;
     }
 
-    public String getAlias() {
-        return alias;
+    public String getTableAlias() {
+        return tableAlias;
     }
 
-    public void setAlias(String alias) {
-        this.alias = alias;
+    public void setTableAlias(String tableAlias) {
+        this.tableAlias = tableAlias;
     }
 
     public List<Cond> getJoinConds() {

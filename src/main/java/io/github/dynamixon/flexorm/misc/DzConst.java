@@ -94,4 +94,8 @@ public interface DzConst {
      */
     String SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE = PREFIX+"sqlExecutionInterceptorChainMode";
 
+    String MAIN_TABLE_ALIAS_FOR_JOIN = PREFIX+"mainTableAliasForJoin";
+
+    String JOIN_INSTRUCTIONS = PREFIX+"joinInstructions";
+
 }

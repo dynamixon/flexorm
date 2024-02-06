@@ -132,6 +132,10 @@ public class SqlBuilder {
         return firstUnit ? "" : " " + andOr + " ";
     }
 
+    private void fillJoinPart(QueryConditionBundle qc, StringBuilder select) {
+        //todo
+    }
+
     private void fillWherePart(ConditionBundle cond, StringBuilder where, List<Object> values) {
         if (cond == null) {
             return;
@@ -181,12 +185,24 @@ public class SqlBuilder {
         }
     }
 
+    private String determineTableAlias(QueryConditionBundle qc) {
+        if(CollectionUtils.isEmpty(qc.getJoinInstructions())){
+            return null;
+        }
+        return StringUtils.isBlank(qc.getTableAliasForJoin())?qc.getTargetTable():qc.getTableAliasForJoin();
+    }
+
+    private void resolveForJoin(QueryConditionBundle qc){
+        //todo
+    }
+
     public SqlPreparedBundle composeSelect(QueryConditionBundle qc) {
         SqlPreparedBundle sp = new SqlPreparedBundle();
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
         StringBuilder select = new StringBuilder("select");
         List<String> selectColumns = qc.getSelectColumns();
+        String mainTableAlias = determineTableAlias(qc);
         if (selectColumns != null && !selectColumns.isEmpty()) {
             for (String intendedField : selectColumns) {
                 select.append(" ").append(intendedField).append(",");
@@ -196,9 +212,16 @@ public class SqlBuilder {
         } else if (qc.isOnlyCount()) {
             select.append(" count(*) as count from ");
         } else {
-            select.append(" * from ");
+            String allColumns = "*";
+            if(StringUtils.isNotBlank(mainTableAlias)){
+                allColumns = mainTableAlias+"."+allColumns;
+            }
+            select.append(" ").append(allColumns).append(" from ");
         }
-        select.append(qc.getTargetTable()).append(" ");
+        select.append(qc.getTargetTable()).append(" ").append((StringUtils.isNotBlank(mainTableAlias)&&!mainTableAlias.equals(qc.getTargetTable()))?mainTableAlias+" ":"");
+
+        resolveForJoin(qc);
+        fillJoinPart(qc, select);
 
         int origWhereLength = where.length();
         fillWherePart(qc, where, values);

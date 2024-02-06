@@ -2,6 +2,7 @@ package io.github.dynamixon.flexorm.misc;
 
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.pojo.Cond;
+import io.github.dynamixon.flexorm.pojo.JoinInstruction;
 import io.github.dynamixon.flexorm.pojo.OrderCond;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -114,6 +115,12 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
+    public static ParamPrep joinTable(String mainTableAlias, List<JoinInstruction> joinInstructions){
+        GeneralThreadLocal.set(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN, mainTableAlias);
+        GeneralThreadLocal.set(DzConst.JOIN_INSTRUCTIONS, joinInstructions);
+        return paramPrep;
+    }
+
     public static Integer getTotalCount(){
         return PagingInjector.getCount();
     }
@@ -164,12 +171,22 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE);
     }
 
+    public static String getMainTableAlias(){
+        return GeneralThreadLocal.get(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
+    }
+
+    public static List<JoinInstruction> getJoinInstructions(){
+        return GeneralThreadLocal.get(DzConst.JOIN_INSTRUCTIONS);
+    }
+
     public static void unSetForQuery(){
         PagingInjector.unSet();
         GeneralThreadLocal.unset(DzConst.SELECT_COLUMNS);
         GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
         GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.RESULT_CLASS);
+        GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
+        GeneralThreadLocal.unset(DzConst.JOIN_INSTRUCTIONS);
         unsetExtraConds();
         unsetExtraOrConds();
     }

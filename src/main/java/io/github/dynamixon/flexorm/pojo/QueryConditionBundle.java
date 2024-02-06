@@ -3,9 +3,12 @@ package io.github.dynamixon.flexorm.pojo;
 import java.util.List;
 
 public class QueryConditionBundle extends ConditionBundle {
+    private Class<?> tableClass;
     private Class<?> resultClass;
     private List<String> selectColumns;
     private boolean onlyCount;
+    private String tableAliasForJoin;
+    private List<JoinInstruction> joinInstructions;
     private List<String> groupByColumns;
     private List<Cond> havingConds;
     private List<OrderCond> orderConds;
@@ -19,9 +22,12 @@ public class QueryConditionBundle extends ConditionBundle {
         setTargetTable(builder.targetTable);
         setConditionAndList(builder.conditionAndList);
         setConditionOrList(builder.conditionOrList);
+        setTableClass(builder.tableClass);
         setResultClass(builder.resultClass);
         setSelectColumns(builder.selectColumns);
         setOnlyCount(builder.onlyCount);
+        setTableAliasForJoin(builder.tableAliasForJoin);
+        setJoinInstructions(builder.joinInstructions);
         setGroupByColumns(builder.groupByColumns);
         setHavingConds(builder.havingConds);
         setOrderConds(builder.orderConds);
@@ -31,6 +37,14 @@ public class QueryConditionBundle extends ConditionBundle {
 
     public Class<?> getResultClass() {
         return resultClass;
+    }
+
+    public Class<?> getTableClass() {
+        return tableClass;
+    }
+
+    public void setTableClass(Class<?> tableClass) {
+        this.tableClass = tableClass;
     }
 
     public void setResultClass(Class<?> resultClass) {
@@ -51,6 +65,22 @@ public class QueryConditionBundle extends ConditionBundle {
 
     public void setOnlyCount(boolean onlyCount) {
         this.onlyCount = onlyCount;
+    }
+
+    public String getTableAliasForJoin() {
+        return tableAliasForJoin;
+    }
+
+    public void setTableAliasForJoin(String tableAliasForJoin) {
+        this.tableAliasForJoin = tableAliasForJoin;
+    }
+
+    public List<JoinInstruction> getJoinInstructions() {
+        return joinInstructions;
+    }
+
+    public void setJoinInstructions(List<JoinInstruction> joinInstructions) {
+        this.joinInstructions = joinInstructions;
     }
 
     public List<String> getGroupByColumns() {
@@ -96,6 +126,8 @@ public class QueryConditionBundle extends ConditionBundle {
     public static final class Builder {
         private List<String> selectColumns;
         private boolean onlyCount;
+        private String tableAliasForJoin;
+        private List<JoinInstruction> joinInstructions;
         private List<String> groupByColumns;
         private List<Cond> havingConds;
         private List<OrderCond> orderConds;
@@ -103,6 +135,7 @@ public class QueryConditionBundle extends ConditionBundle {
         private Integer limit;
         private List<Cond> conditionAndList;
         private List<Cond> conditionOrList;
+        private Class<?> tableClass;
         private Class<?> resultClass;
         private String targetTable;
 
@@ -116,6 +149,16 @@ public class QueryConditionBundle extends ConditionBundle {
 
         public Builder onlyCount(boolean onlyCount) {
             this.onlyCount = onlyCount;
+            return this;
+        }
+
+        public Builder tableAliasForJoin(String val) {
+            tableAliasForJoin = val;
+            return this;
+        }
+
+        public Builder joinInstructions(List<JoinInstruction> val) {
+            joinInstructions = val;
             return this;
         }
 
@@ -160,6 +203,11 @@ public class QueryConditionBundle extends ConditionBundle {
 
         public Builder conditionOrList(List<Cond> conditionOrList) {
             this.conditionOrList = conditionOrList;
+            return this;
+        }
+
+        public Builder tableClass(Class<?> val) {
+            tableClass = val;
             return this;
         }
 
