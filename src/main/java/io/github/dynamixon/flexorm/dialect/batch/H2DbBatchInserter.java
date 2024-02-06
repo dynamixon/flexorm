@@ -6,11 +6,12 @@ import io.github.dynamixon.flexorm.dialect.DialectConst;
 import java.util.List;
 import java.util.Map;
 
-public class MsSqlBatchInserter implements BatchInserter{
+public class H2DbBatchInserter implements BatchInserter{
     @Override
     public String getDatabaseType() {
-        return DialectConst.MSSQL;
+        return DialectConst.H2;
     }
+
     @Override
     public int batchInsert(CoreRunner coreRunner, String table, List<Map<String, Object>> listMap) {
         return StandardBatchInserter.batchInsert(coreRunner, table, listMap);

@@ -4,3 +4,4 @@ io.github.dynamixon.flexorm.dialect.batch.MsSqlBatchInserter
 io.github.dynamixon.flexorm.dialect.batch.MysqlBatchInserter
 io.github.dynamixon.flexorm.dialect.batch.PgBatchInserter
 io.github.dynamixon.flexorm.dialect.batch.SqliteBatchInserter
+io.github.dynamixon.flexorm.dialect.batch.H2DbBatchInserter
