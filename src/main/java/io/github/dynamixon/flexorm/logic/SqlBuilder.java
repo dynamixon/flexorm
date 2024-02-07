@@ -4,6 +4,7 @@ import io.github.dynamixon.flexorm.CoreRunner;
 import io.github.dynamixon.flexorm.annotation.CondOpr;
 import io.github.dynamixon.flexorm.dialect.pagination.DefaultPagination;
 import io.github.dynamixon.flexorm.dialect.pagination.Pagination;
+import io.github.dynamixon.flexorm.enums.CondAndOr;
 import io.github.dynamixon.flexorm.misc.DBException;
 import io.github.dynamixon.flexorm.misc.MiscUtil;
 import io.github.dynamixon.flexorm.pojo.*;
@@ -11,18 +12,19 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class SqlBuilder {
+    private final CoreRunner coreRunner;
     private final Pagination pagination;
 
     public SqlBuilder() {
+        this.coreRunner = null;
         this.pagination = new DefaultPagination();
     }
 
     public SqlBuilder(CoreRunner coreRunner) {
+        this.coreRunner = coreRunner;
         this.pagination = coreRunner.getPagination();
     }
 
@@ -132,8 +134,18 @@ public class SqlBuilder {
         return firstUnit ? "" : " " + andOr + " ";
     }
 
-    private void fillJoinPart(QueryConditionBundle qc, StringBuilder select) {
-        //todo
+    private void fillJoinPart(QueryConditionBundle qc, StringBuilder select, List<Object> values) {
+        List<JoinInstruction> joinInstructions = qc.getJoinInstructions();
+        if(CollectionUtils.isEmpty(joinInstructions)){
+            return;
+        }
+        joinInstructions.forEach(joinInstruction -> {
+            SqlValuePart sqlValuePart = buildCondPart(CondAndOr.AND.getValue(), joinInstruction.getJoinConds());
+            if(sqlValuePart != null && sqlValuePart.valid()){
+                select.append(" on ").append(sqlValuePart.getSqlPart());
+                values.addAll(sqlValuePart.getValueParts());
+            }
+        });
     }
 
     private void fillWherePart(ConditionBundle cond, StringBuilder where, List<Object> values) {
@@ -177,7 +189,7 @@ public class SqlBuilder {
         if (CollectionUtils.isNotEmpty(orderConds)) {
             where.append(" order by");
             for (OrderCond orderCond : orderConds) {
-                String orderByField = orderCond.getOrderByField();
+                String orderByField = orderCond.getOrderByColumn();
                 String orderByType = orderCond.getOrderByType();
                 where.append(" ").append(orderByField).append(" ").append(orderByType).append(",");
             }
@@ -185,7 +197,7 @@ public class SqlBuilder {
         }
     }
 
-    private String determineTableAlias(QueryConditionBundle qc) {
+    private String determineTableAliasForJoin(QueryConditionBundle qc) {
         if(CollectionUtils.isEmpty(qc.getJoinInstructions())){
             return null;
         }
@@ -194,6 +206,40 @@ public class SqlBuilder {
 
     private void resolveForJoin(QueryConditionBundle qc){
         //todo
+        Class<?> tableClass = qc.getTableClass();
+        String tableAliasForJoin = qc.getTableAliasForJoin();
+        TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
+        Map<String, String> columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(tableClass,coreRunner.getDataSource());
+        Set<String> columnsNames = columnToFieldMap.keySet();
+        qc.setSelectColumns(getColumnsForJoin(columnsNames,qc.getSelectColumns(),tableAliasForJoin));
+        qc.setGroupByColumns(getColumnsForJoin(columnsNames,qc.getGroupByColumns(),tableAliasForJoin));
+        qc.setOrderConds(getOrderCondsForJoin(columnsNames,qc.getOrderConds(),tableAliasForJoin));
+    }
+
+    private List<String> getColumnsForJoin(Set<String> tableColumnsNames,List<String> columns,String tableAliasForJoin){
+        if(StringUtils.isBlank(tableAliasForJoin) || CollectionUtils.isEmpty(columns)){
+            return columns;
+        }
+        List<String> columnsForJoin = new ArrayList<>();
+        columns.forEach(column -> {
+            if(tableColumnsNames.contains(column)){
+                columnsForJoin.add(tableAliasForJoin+"."+column);
+            }
+        });
+        return columnsForJoin;
+    }
+
+    private List<OrderCond> getOrderCondsForJoin(Set<String> tableColumnsNames,List<OrderCond> orderConds,String tableAliasForJoin){
+        if(StringUtils.isBlank(tableAliasForJoin) || CollectionUtils.isEmpty(orderConds)){
+            return orderConds;
+        }
+        List<OrderCond> orderCondsForJoin = new ArrayList<>();
+        orderConds.forEach(orderCond -> {
+            if(tableColumnsNames.contains(orderCond.getOrderByColumn())){
+                orderCondsForJoin.add(new OrderCond(tableAliasForJoin+"."+orderCond.getOrderByColumn(),orderCond.getOrderByType()));
+            }
+        });
+        return orderCondsForJoin;
     }
 
     public SqlPreparedBundle composeSelect(QueryConditionBundle qc) {
@@ -202,7 +248,8 @@ public class SqlBuilder {
         List<Object> values = new ArrayList<>();
         StringBuilder select = new StringBuilder("select");
         List<String> selectColumns = qc.getSelectColumns();
-        String mainTableAlias = determineTableAlias(qc);
+        String mainTableAliasForJoin = determineTableAliasForJoin(qc);
+        boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin);
         if (selectColumns != null && !selectColumns.isEmpty()) {
             for (String intendedField : selectColumns) {
                 select.append(" ").append(intendedField).append(",");
@@ -213,15 +260,17 @@ public class SqlBuilder {
             select.append(" count(*) as count from ");
         } else {
             String allColumns = "*";
-            if(StringUtils.isNotBlank(mainTableAlias)){
-                allColumns = mainTableAlias+"."+allColumns;
+            if(requireJoin){
+                allColumns = mainTableAliasForJoin+"."+allColumns;
             }
             select.append(" ").append(allColumns).append(" from ");
         }
-        select.append(qc.getTargetTable()).append(" ").append((StringUtils.isNotBlank(mainTableAlias)&&!mainTableAlias.equals(qc.getTargetTable()))?mainTableAlias+" ":"");
+        select.append(qc.getTargetTable()).append(" ").append((requireJoin&&!mainTableAliasForJoin.equals(qc.getTargetTable()))?mainTableAliasForJoin+" ":"");
 
-        resolveForJoin(qc);
-        fillJoinPart(qc, select);
+        if(requireJoin){
+            resolveForJoin(qc);
+            fillJoinPart(qc, select, values);
+        }
 
         int origWhereLength = where.length();
         fillWherePart(qc, where, values);

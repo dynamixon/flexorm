@@ -1,27 +1,27 @@
 package io.github.dynamixon.flexorm.pojo;
 
 public class OrderCond {
-    private String orderByField;
+    private String orderByColumn;
     private String orderByType;
 
     public OrderCond() {}
 
-    public OrderCond(String orderByField) {
-        this.orderByField = orderByField;
+    public OrderCond(String orderByColumn) {
+        this.orderByColumn = orderByColumn;
         this.orderByType = "asc";
     }
 
-    public OrderCond(String orderByField, String orderByType) {
-        this.orderByField = orderByField;
+    public OrderCond(String orderByColumn, String orderByType) {
+        this.orderByColumn = orderByColumn;
         this.orderByType = orderByType;
     }
 
-    public String getOrderByField() {
-        return orderByField;
+    public String getOrderByColumn() {
+        return orderByColumn;
     }
 
-    public void setOrderByField(String orderByField) {
-        this.orderByField = orderByField;
+    public void setOrderByColumn(String orderByColumn) {
+        this.orderByColumn = orderByColumn;
     }
 
     public String getOrderByType() {
