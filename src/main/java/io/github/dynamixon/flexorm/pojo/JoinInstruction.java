@@ -9,6 +9,7 @@ import java.util.List;
  * @date 24-2-4
  */
 public class JoinInstruction {
+    public static final String MAIN_TABLE_ALIAS_PLACEHOLDER = "$$mainTableAlias$$";
     private String joinMethod;
     private String tableName;
     private String tableAlias;
@@ -25,11 +26,15 @@ public class JoinInstruction {
     }
 
     public JoinInstruction(String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
-        this("left join", tableName, tableAlias, mainTableCol, joinTableCol);
+        this("left join", MAIN_TABLE_ALIAS_PLACEHOLDER, tableName, tableAlias, mainTableCol, joinTableCol);
     }
 
-    public JoinInstruction(String joinMethod, String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
-        this(joinMethod, tableName, tableAlias, Collections.singletonList(new Cond.Builder().columnName(mainTableCol).compareOpr(" = "+joinTableCol).ignoreNull(true).build()));
+    public JoinInstruction(String mainTableAlias,String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
+        this("left join",mainTableAlias, tableName, tableAlias, mainTableCol, joinTableCol);
+    }
+
+    public JoinInstruction(String joinMethod,String mainTableAlias, String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
+        this(joinMethod, tableName, tableAlias, Collections.singletonList(new Cond.Builder().columnName(mainTableAlias+"."+mainTableCol).compareOpr(" = "+tableAlias+"."+joinTableCol).ignoreNull(false).build()));
     }
 
     public JoinInstruction(String tableName,String tableAlias, Cond ... conds) {

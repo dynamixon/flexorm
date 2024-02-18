@@ -48,7 +48,8 @@ public class SqlBuilder {
             String leftP = inner && unit.hasInnerConds() ? "(" : "";
             int origLength = condPart.length();
 
-            String field = unit.getColumnName();
+            String columnName = unit.getColumnName();
+            String origOpr = unit.getCompareOpr();
             String operator = StringUtils.trimToEmpty(unit.getCompareOpr()).toLowerCase().replaceAll("\\s+", " ");
             Object value = unit.getValue();
             if (("in".equalsIgnoreCase(operator) || "not in".equalsIgnoreCase(operator)) && value != null) {
@@ -61,7 +62,7 @@ public class SqlBuilder {
                     throw new DBException("value must be an array or a collection when operator is [" + operator + "]");
                 }
                 if (CollectionUtils.isNotEmpty(inValueList)) {
-                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(field).append(" ").append(operator).append(" (");
+                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(columnName).append(" ").append(operator).append(" (");
                     for (Object valueTmp : inValueList) {
                         condPart.append("?,");
                         values.add(valueTmp);
@@ -86,21 +87,22 @@ public class SqlBuilder {
                     v2 = listValue.get(1);
                 }
                 if (v1 != null && v2 != null) {
-                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(field).append(" ").append(operator).append(" ? and ? ");
+                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(columnName).append(" ").append(operator).append(" ? and ? ");
                     values.add(v1);
                     values.add(v2);
                     firstUnit = false;
                 }
             } else if (value == null) {
                 if (!unit.ignoreNull()) {
-                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(field).append(" ").append(operator).append(" ");
+                    //may contain arbitrary sql part, must use the original operator
+                    condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(columnName).append(" ").append(origOpr).append(" ");
                     firstUnit = false;
                 }
             } else if (value instanceof Null) {
-                condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(field).append(" is null ");
+                condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(columnName).append(" is null ");
                 firstUnit = false;
             } else {
-                condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(field).append(" ").append(operator).append(" ?");
+                condPart.append(andOrConcat(andOr, firstUnit)).append(leftP).append(columnName).append(" ").append(operator).append(" ?");
                 values.add(value);
                 firstUnit = false;
             }
@@ -143,7 +145,9 @@ public class SqlBuilder {
         joinInstructions.forEach(joinInstruction -> {
             SqlValuePart sqlValuePart = buildCondPart(CondAndOr.AND.getValue(), joinInstruction.getJoinConds());
             if(sqlValuePart != null && sqlValuePart.valid()){
-                select.append(" on ").append(sqlValuePart.getSqlPart());
+                select.append(" ").append(joinInstruction.getJoinMethod())
+                    .append(" ").append(joinInstruction.getTableName())
+                    .append(" ").append(joinInstruction.getTableAlias()).append(" on ").append(sqlValuePart.getSqlPart());
                 values.addAll(sqlValuePart.getValueParts());
             }
         });
@@ -274,10 +278,10 @@ public class SqlBuilder {
         StringBuilder select = new StringBuilder("select");
         List<String> selectColumns = qc.getSelectColumns();
         String mainTableAliasForJoin = determineTableAliasForJoin(qc);
-        boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin);
+        boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin) && CollectionUtils.isNotEmpty(qc.getJoinInstructions());
         if (selectColumns != null && !selectColumns.isEmpty()) {
-            for (String intendedField : selectColumns) {
-                select.append(" ").append(intendedField).append(",");
+            for (String selectColumn : selectColumns) {
+                select.append(" ").append(selectColumn).append(",");
             }
             select.deleteCharAt(select.length() - 1);
             select.append(" from ");
