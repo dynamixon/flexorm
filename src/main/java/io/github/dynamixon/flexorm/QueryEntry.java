@@ -177,7 +177,6 @@ public class QueryEntry {
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
-            resolveColumnNameFromFieldInfoGetterBase(delCond);
             SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeDelete(delCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Delete without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -216,7 +215,6 @@ public class QueryEntry {
     @SuppressWarnings({"unchecked"})
     public <T> List<T> genericQry(QueryConditionBundle qryCondition) {
         Class<?> resultClass = qryCondition.getResultClass();
-        resolveColumnNameFromFieldInfoGetter(qryCondition);
         SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
         String sql = sqlPreparedBundle.getSql();
         Object[] values = sqlPreparedBundle.getValues();
@@ -487,7 +485,6 @@ public class QueryEntry {
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
-            resolveColumnNameFromFieldInfoGetterBase(upCond);
             SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -802,21 +799,5 @@ public class QueryEntry {
         }
         ExtraParamInjector.selectColumns("1 as count");
         ExtraParamInjector.resultClass(CountInfo.class);
-    }
-
-    private void resolveColumnNameFromFieldInfoGetter(QueryConditionBundle qryCondition){
-        if(qryCondition==null){
-            return;
-        }
-        resolveColumnNameFromFieldInfoGetterBase(qryCondition);
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getHavingConds());
-    }
-
-    private void resolveColumnNameFromFieldInfoGetterBase(ConditionBundle conditionBundle){
-        if(conditionBundle==null){
-            return;
-        }
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionAndList());
-        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionOrList());
     }
 }

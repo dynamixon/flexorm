@@ -6,6 +6,7 @@ import io.github.dynamixon.flexorm.dialect.pagination.DefaultPagination;
 import io.github.dynamixon.flexorm.dialect.pagination.Pagination;
 import io.github.dynamixon.flexorm.enums.CondAndOr;
 import io.github.dynamixon.flexorm.misc.DBException;
+import io.github.dynamixon.flexorm.misc.FieldInfoMethodRefUtil;
 import io.github.dynamixon.flexorm.misc.MiscUtil;
 import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
@@ -205,7 +206,6 @@ public class SqlBuilder {
     }
 
     private void resolveForJoin(QueryConditionBundle qc){
-        //todo
         Class<?> tableClass = qc.getTableClass();
         String tableAliasForJoin = qc.getTableAliasForJoin();
         TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
@@ -214,6 +214,9 @@ public class SqlBuilder {
         qc.setSelectColumns(getColumnsForJoin(columnsNames,qc.getSelectColumns(),tableAliasForJoin));
         qc.setGroupByColumns(getColumnsForJoin(columnsNames,qc.getGroupByColumns(),tableAliasForJoin));
         qc.setOrderConds(getOrderCondsForJoin(columnsNames,qc.getOrderConds(),tableAliasForJoin));
+        qc.setConditionAndList(getCondListForJoin(columnsNames,qc.getConditionAndList(),tableAliasForJoin));
+        qc.setConditionOrList(getCondListForJoin(columnsNames,qc.getConditionOrList(),tableAliasForJoin));
+        qc.setHavingConds(getCondListForJoin(columnsNames,qc.getHavingConds(),tableAliasForJoin));
     }
 
     private List<String> getColumnsForJoin(Set<String> tableColumnsNames,List<String> columns,String tableAliasForJoin){
@@ -224,6 +227,8 @@ public class SqlBuilder {
         columns.forEach(column -> {
             if(tableColumnsNames.contains(column)){
                 columnsForJoin.add(tableAliasForJoin+"."+column);
+            }else {
+                columnsForJoin.add(column);
             }
         });
         return columnsForJoin;
@@ -236,13 +241,33 @@ public class SqlBuilder {
         List<OrderCond> orderCondsForJoin = new ArrayList<>();
         orderConds.forEach(orderCond -> {
             if(tableColumnsNames.contains(orderCond.getOrderByColumn())){
-                orderCondsForJoin.add(new OrderCond(tableAliasForJoin+"."+orderCond.getOrderByColumn(),orderCond.getOrderByType()));
+                orderCond.setOrderByColumn(tableAliasForJoin+"."+orderCond.getOrderByColumn());
             }
+            orderCondsForJoin.add(orderCond);
         });
         return orderCondsForJoin;
     }
 
+    private List<Cond> getCondListForJoin(Set<String> tableColumnsNames,List<Cond> condList,String tableAliasForJoin){
+        if(StringUtils.isBlank(tableAliasForJoin) || CollectionUtils.isEmpty(condList)){
+            return condList;
+        }
+        List<Cond> condListForJoin = new ArrayList<>();
+        condList.forEach(cond -> {
+            InnerCond innerCond = cond.getInnerCond();
+            if(innerCond !=null&&CollectionUtils.isNotEmpty(innerCond.getInnerCondList())){
+                cond.setInnerCond(new InnerCond(innerCond.getInnerCondAndOr(),getCondListForJoin(tableColumnsNames,innerCond.getInnerCondList(),tableAliasForJoin)));
+            }
+            if(tableColumnsNames.contains(cond.getColumnName())){
+                cond.setColumnName(tableAliasForJoin+"."+cond.getColumnName());
+            }
+            condListForJoin.add(cond);
+        });
+        return condListForJoin;
+    }
+
     public SqlPreparedBundle composeSelect(QueryConditionBundle qc) {
+        resolveColumnNameFromFieldInfoGetter(qc);
         SqlPreparedBundle sp = new SqlPreparedBundle();
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
@@ -285,6 +310,7 @@ public class SqlBuilder {
     }
 
     public SqlPreparedBundle composeDelete(ConditionBundle cb) {
+        resolveColumnNameFromFieldInfoGetterBase(cb);
         SqlPreparedBundle sp = new SqlPreparedBundle();
         List<Object> values = new ArrayList<>();
         StringBuilder delete = new StringBuilder("delete from ").append(cb.getTargetTable());
@@ -298,6 +324,7 @@ public class SqlBuilder {
     }
 
     public SqlPreparedBundle composeUpdate(UpdateConditionBundle uc) {
+        resolveColumnNameFromFieldInfoGetterBase(uc);
         SqlPreparedBundle sp = new SqlPreparedBundle();
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
@@ -359,5 +386,21 @@ public class SqlBuilder {
             throw new DBException(e);
         }
         return conds;
+    }
+
+    public void resolveColumnNameFromFieldInfoGetter(QueryConditionBundle qryCondition){
+        if(qryCondition==null){
+            return;
+        }
+        resolveColumnNameFromFieldInfoGetterBase(qryCondition);
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getHavingConds());
+    }
+
+    public void resolveColumnNameFromFieldInfoGetterBase(ConditionBundle conditionBundle){
+        if(conditionBundle==null){
+            return;
+        }
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionAndList());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,conditionBundle.getConditionOrList());
     }
 }
