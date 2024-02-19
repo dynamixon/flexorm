@@ -8,7 +8,7 @@ public class QueryConditionBundle extends ConditionBundle {
     private List<String> selectColumns;
     private boolean onlyCount;
     private String tableAliasForJoin;
-    private List<JoinInstruction> joinInstructions;
+    private List<Join> joins;
     private List<String> groupByColumns;
     private List<Cond> havingConds;
     private List<OrderCond> orderConds;
@@ -27,7 +27,7 @@ public class QueryConditionBundle extends ConditionBundle {
         setSelectColumns(builder.selectColumns);
         setOnlyCount(builder.onlyCount);
         setTableAliasForJoin(builder.tableAliasForJoin);
-        setJoinInstructions(builder.joinInstructions);
+        setJoinInstructions(builder.joins);
         setGroupByColumns(builder.groupByColumns);
         setHavingConds(builder.havingConds);
         setOrderConds(builder.orderConds);
@@ -75,12 +75,12 @@ public class QueryConditionBundle extends ConditionBundle {
         this.tableAliasForJoin = tableAliasForJoin;
     }
 
-    public List<JoinInstruction> getJoinInstructions() {
-        return joinInstructions;
+    public List<Join> getJoinInstructions() {
+        return joins;
     }
 
-    public void setJoinInstructions(List<JoinInstruction> joinInstructions) {
-        this.joinInstructions = joinInstructions;
+    public void setJoinInstructions(List<Join> joins) {
+        this.joins = joins;
     }
 
     public List<String> getGroupByColumns() {
@@ -127,7 +127,7 @@ public class QueryConditionBundle extends ConditionBundle {
         private List<String> selectColumns;
         private boolean onlyCount;
         private String tableAliasForJoin;
-        private List<JoinInstruction> joinInstructions;
+        private List<Join> joins;
         private List<String> groupByColumns;
         private List<Cond> havingConds;
         private List<OrderCond> orderConds;
@@ -157,8 +157,8 @@ public class QueryConditionBundle extends ConditionBundle {
             return this;
         }
 
-        public Builder joinInstructions(List<JoinInstruction> val) {
-            joinInstructions = val;
+        public Builder joinInstructions(List<Join> val) {
+            joins = val;
             return this;
         }
 

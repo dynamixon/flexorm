@@ -138,11 +138,11 @@ public class SqlBuilder {
     }
 
     private void fillJoinPart(QueryConditionBundle qc, StringBuilder select, List<Object> values) {
-        List<JoinInstruction> joinInstructions = qc.getJoinInstructions();
-        if(CollectionUtils.isEmpty(joinInstructions)){
+        List<Join> joins = qc.getJoinInstructions();
+        if(CollectionUtils.isEmpty(joins)){
             return;
         }
-        joinInstructions.forEach(joinInstruction -> {
+        joins.forEach(joinInstruction -> {
             SqlValuePart sqlValuePart = buildCondPart(CondAndOr.AND.getValue(), joinInstruction.getJoinConds());
             if(sqlValuePart != null && sqlValuePart.valid()){
                 select.append(" ").append(joinInstruction.getJoinMethod())

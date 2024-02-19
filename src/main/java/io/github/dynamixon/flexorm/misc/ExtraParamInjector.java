@@ -2,7 +2,7 @@ package io.github.dynamixon.flexorm.misc;
 
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.pojo.Cond;
-import io.github.dynamixon.flexorm.pojo.JoinInstruction;
+import io.github.dynamixon.flexorm.pojo.Join;
 import io.github.dynamixon.flexorm.pojo.OrderCond;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -115,22 +115,22 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
-    public static ParamPrep joinTable(String mainTableAlias, List<JoinInstruction> joinInstructions){
+    public static ParamPrep joinTable(String mainTableAlias, List<Join> joins){
         GeneralThreadLocal.set(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN, mainTableAlias);
-        if(CollectionUtils.isNotEmpty(joinInstructions)){
+        if(CollectionUtils.isNotEmpty(joins)){
             //in corporate with JoinInstruction(String tableName,String tableAlias, String mainTableCol, String joinTableCol)
-            joinInstructions.forEach(joinInstruction -> {
+            joins.forEach(joinInstruction -> {
                 if(joinInstruction!=null){
                     List<Cond> joinConds = joinInstruction.getJoinConds();
                     if(CollectionUtils.isNotEmpty(joinConds)&&joinConds.size()==1){
                         Cond cond = joinConds.get(0);
                         String columnName = cond.getColumnName();
-                        cond.setColumnName(columnName.replace(JoinInstruction.MAIN_TABLE_ALIAS_PLACEHOLDER,mainTableAlias));
+                        cond.setColumnName(columnName.replace(Join.MAIN_TABLE_ALIAS_PLACEHOLDER,mainTableAlias));
                     }
                 }
             });
         }
-        GeneralThreadLocal.set(DzConst.JOIN_INSTRUCTIONS, joinInstructions);
+        GeneralThreadLocal.set(DzConst.JOIN_INSTRUCTIONS, joins);
         return paramPrep;
     }
 
@@ -188,7 +188,7 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
     }
 
-    public static List<JoinInstruction> getJoinInstructions(){
+    public static List<Join> getJoinInstructions(){
         return GeneralThreadLocal.get(DzConst.JOIN_INSTRUCTIONS);
     }
 

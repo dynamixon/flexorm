@@ -3,9 +3,9 @@ package io.github.dynamixon.test.logic.join
 import io.github.dynamixon.flexorm.dialect.DialectConst
 import io.github.dynamixon.flexorm.misc.InterceptorContext
 import io.github.dynamixon.flexorm.pojo.Cond
-import io.github.dynamixon.flexorm.pojo.JoinInstruction
-import io.github.dynamixon.flexorm.pojo.LeftJoinInstruction
-import io.github.dynamixon.flexorm.pojo.RightJoinInstruction
+import io.github.dynamixon.flexorm.pojo.Join
+import io.github.dynamixon.flexorm.pojo.LeftJoin
+import io.github.dynamixon.flexorm.pojo.RightJoin
 import io.github.dynamixon.moredata.JoinTableA
 import io.github.dynamixon.test.logic.LogicTestBase
 import io.github.dynamixon.test.logic.LogicTester
@@ -72,8 +72,8 @@ class SqlJoinTest implements LogicTestBase{
                 intercept(LogicTester.getDelegatedInterceptor([new JoinTableA()],validator,[(DIALECT_KEY):it.getDialectType()])),
                 selectColumns('TBL_A.id','TBL_B.int_f','TBL_C.varchar_f'),
                 joinTable('TBL_A',[
-                    new LeftJoinInstruction('join_table_B','TBL_B','id','id'),
-                    new RightJoinInstruction('join_table_C','TBL_C','id','id')
+                    new LeftJoin('join_table_B','TBL_B','id','id'),
+                    new RightJoin('join_table_C','TBL_C','id','id')
                 ])
             ).findObjects(JoinTableA, new Cond('id',123L),new Cond('TBL_B.int_f',456),new Cond('TBL_C.varchar_f','abc'))
         }
@@ -91,7 +91,7 @@ class SqlJoinTest implements LogicTestBase{
                 intercept(LogicTester.getDelegatedInterceptor([new JoinTableA()],validator,[(DIALECT_KEY):it.getDialectType()])),
                 selectColumns('TBL_A.id','TBL_B.int_f'),
                 joinTable('TBL_A',[
-                    new JoinInstruction('inner join','join_table_B','TBL_B',
+                    new Join('inner join','join_table_B','TBL_B',
                         new Cond.Builder().columnName('TBL_A.id').compareOpr('= TBL_B.id').ignoreNull(false).build(),
                         new Cond('TBL_A.varchar_f','qwe'),
                     )
