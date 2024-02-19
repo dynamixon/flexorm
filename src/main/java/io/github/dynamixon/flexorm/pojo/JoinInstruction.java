@@ -25,20 +25,12 @@ public class JoinInstruction {
         this.joinConds = joinConds;
     }
 
-    public JoinInstruction(String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
-        this("left join", MAIN_TABLE_ALIAS_PLACEHOLDER, tableName, tableAlias, mainTableCol, joinTableCol);
-    }
-
-    public JoinInstruction(String mainTableAlias,String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
-        this("left join",mainTableAlias, tableName, tableAlias, mainTableCol, joinTableCol);
+    public JoinInstruction(String joinMethod,String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
+        this(joinMethod, MAIN_TABLE_ALIAS_PLACEHOLDER, tableName, tableAlias, mainTableCol, joinTableCol);
     }
 
     public JoinInstruction(String joinMethod,String mainTableAlias, String tableName,String tableAlias, String mainTableCol, String joinTableCol) {
         this(joinMethod, tableName, tableAlias, Collections.singletonList(new Cond.Builder().columnName(mainTableAlias+"."+mainTableCol).compareOpr(" = "+tableAlias+"."+joinTableCol).ignoreNull(false).build()));
-    }
-
-    public JoinInstruction(String tableName,String tableAlias, Cond ... conds) {
-        this("left join", tableName, tableAlias, Arrays.asList(conds));
     }
 
     public JoinInstruction(String joinMethod, String tableName,String tableAlias, Cond ... conds) {

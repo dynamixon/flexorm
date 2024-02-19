@@ -4,6 +4,8 @@ import io.github.dynamixon.flexorm.dialect.DialectConst
 import io.github.dynamixon.flexorm.misc.InterceptorContext
 import io.github.dynamixon.flexorm.pojo.Cond
 import io.github.dynamixon.flexorm.pojo.JoinInstruction
+import io.github.dynamixon.flexorm.pojo.LeftJoinInstruction
+import io.github.dynamixon.flexorm.pojo.RightJoinInstruction
 import io.github.dynamixon.moredata.JoinTableA
 import io.github.dynamixon.test.logic.LogicTestBase
 import io.github.dynamixon.test.logic.LogicTester
@@ -60,7 +62,7 @@ class SqlJoinTest implements LogicTestBase{
 
     static void basicTest() {
         Closure<?> validator = genValidator(
-            'select TBL_A.id, TBL_B.int_f, TBL_C.varchar_f from join_table_A TBL_A  left join join_table_B TBL_B on TBL_A.id  = TBL_B.id  left join join_table_C TBL_C on TBL_A.id  = TBL_C.id  where TBL_A.id = ? and TBL_B.int_f = ? and TBL_C.varchar_f = ?',
+            'select TBL_A.id, TBL_B.int_f, TBL_C.varchar_f from join_table_A TBL_A  left join join_table_B TBL_B on TBL_A.id  = TBL_B.id  right join join_table_C TBL_C on TBL_A.id  = TBL_C.id  where TBL_A.id = ? and TBL_B.int_f = ? and TBL_C.varchar_f = ?',
             [123L,456,'abc']
         )
 
@@ -70,8 +72,8 @@ class SqlJoinTest implements LogicTestBase{
                 intercept(LogicTester.getDelegatedInterceptor([new JoinTableA()],validator,[(DIALECT_KEY):it.getDialectType()])),
                 selectColumns('TBL_A.id','TBL_B.int_f','TBL_C.varchar_f'),
                 joinTable('TBL_A',[
-                    new JoinInstruction('join_table_B','TBL_B','id','id'),
-                    new JoinInstruction('join_table_C','TBL_C','id','id')
+                    new LeftJoinInstruction('join_table_B','TBL_B','id','id'),
+                    new RightJoinInstruction('join_table_C','TBL_C','id','id')
                 ])
             ).findObjects(JoinTableA, new Cond('id',123L),new Cond('TBL_B.int_f',456),new Cond('TBL_C.varchar_f','abc'))
         }
@@ -79,7 +81,7 @@ class SqlJoinTest implements LogicTestBase{
 
     static void multiConditionTest() {
         Closure<?> validator = genValidator(
-            'select TBL_A.id, TBL_B.int_f from join_table_A TBL_A  left join join_table_B TBL_B on TBL_A.id = TBL_B.id  and TBL_A.varchar_f = ? where TBL_A.id = ? and TBL_B.int_f = ?',
+            'select TBL_A.id, TBL_B.int_f from join_table_A TBL_A  inner join join_table_B TBL_B on TBL_A.id = TBL_B.id  and TBL_A.varchar_f = ? where TBL_A.id = ? and TBL_B.int_f = ?',
             ['qwe',123L,456]
         )
 
@@ -89,7 +91,7 @@ class SqlJoinTest implements LogicTestBase{
                 intercept(LogicTester.getDelegatedInterceptor([new JoinTableA()],validator,[(DIALECT_KEY):it.getDialectType()])),
                 selectColumns('TBL_A.id','TBL_B.int_f'),
                 joinTable('TBL_A',[
-                    new JoinInstruction('join_table_B','TBL_B',
+                    new JoinInstruction('inner join','join_table_B','TBL_B',
                         new Cond.Builder().columnName('TBL_A.id').compareOpr('= TBL_B.id').ignoreNull(false).build(),
                         new Cond('TBL_A.varchar_f','qwe'),
                     )
