@@ -5,6 +5,7 @@ import io.github.dynamixon.test.dynamictable.DyTableNameTest
 import io.github.dynamixon.test.fakedb.FakeDBTest
 import io.github.dynamixon.test.h2.H2Test
 import io.github.dynamixon.test.hsqldb.HsqlDbTest
+import io.github.dynamixon.test.logic.LogicTester
 import io.github.dynamixon.test.metacache.MetaCacheTest
 import io.github.dynamixon.test.mssql.MsSqlTest
 import io.github.dynamixon.test.mysql.MysqlTest
@@ -40,8 +41,6 @@ class BundledTest {
         ]){
             new Table2JavaTest().testDialect(dialect)
         }
-        new SPITest().test()
-        new TableLocTest().test()
         MetaCacheTest.printCurrentCache()
     }
 
@@ -49,6 +48,7 @@ class BundledTest {
         new TableLocTest().test()
         new SqlBuilderTest().testInnerAndOrBasic()
         new SqlBuilderTest().testNull()
+        new LogicTester().testAll()
         def namedSqlTest = new NamedSqlTest()
         namedSqlTest.basicTest()
         namedSqlTest.inParamTest()
@@ -56,5 +56,7 @@ class BundledTest {
         DyTableNameTest.test()
         FieldInfoGetterJavaTest.extraTest()
         FieldInfoGetterGroovyTest.extraTest()
+        new SPITest().test()
+        new TableLocTest().test()
     }
 }

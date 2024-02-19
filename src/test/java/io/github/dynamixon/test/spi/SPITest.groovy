@@ -1,6 +1,6 @@
 package io.github.dynamixon.test.spi
 
-
+import io.github.dynamixon.flexorm.dialect.batch.H2DbBatchInserter
 import io.github.dynamixon.test.fakedb.FakeDbBatchInserter
 import io.github.dynamixon.flexorm.dialect.batch.BatchInserter
 import io.github.dynamixon.flexorm.dialect.batch.DefaultBatchInserter
@@ -19,7 +19,7 @@ class SPITest {
         for (BatchInserter batchInserter : batchInserters) {
             batchInserterList.add(batchInserter)
         }
-        assert batchInserterList.size() == 9
+        assert batchInserterList.size() == 10
         assert batchInserterList[0] instanceof TestBatchInserter
         assert batchInserterList[1] instanceof GvTestBatchInserter
         assert batchInserterList[2] instanceof FakeDbBatchInserter
@@ -29,5 +29,6 @@ class SPITest {
         assert batchInserterList[6] instanceof MysqlBatchInserter
         assert batchInserterList[7] instanceof PgBatchInserter
         assert batchInserterList[8] instanceof SqliteBatchInserter
+        assert batchInserterList[9] instanceof H2DbBatchInserter
     }
 }
