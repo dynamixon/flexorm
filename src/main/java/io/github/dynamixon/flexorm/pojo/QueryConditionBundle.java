@@ -157,7 +157,7 @@ public class QueryConditionBundle extends ConditionBundle {
             return this;
         }
 
-        public Builder joinInstructions(List<Join> val) {
+        public Builder joins(List<Join> val) {
             joins = val;
             return this;
         }

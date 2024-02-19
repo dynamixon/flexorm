@@ -118,7 +118,7 @@ public class ExtraParamInjector {
     public static ParamPrep joinTable(String mainTableAlias, List<Join> joins){
         GeneralThreadLocal.set(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN, mainTableAlias);
         if(CollectionUtils.isNotEmpty(joins)){
-            //in corporate with JoinInstruction(String tableName,String tableAlias, String mainTableCol, String joinTableCol)
+            //in corporate with Join(String joinMethod, String tableName, String tableAlias, String mainTableCol, String joinTableCol)
             joins.forEach(joinInstruction -> {
                 if(joinInstruction!=null){
                     List<Cond> joinConds = joinInstruction.getJoinConds();
@@ -130,7 +130,7 @@ public class ExtraParamInjector {
                 }
             });
         }
-        GeneralThreadLocal.set(DzConst.JOIN_INSTRUCTIONS, joins);
+        GeneralThreadLocal.set(DzConst.JOINS, joins);
         return paramPrep;
     }
 
@@ -188,8 +188,8 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
     }
 
-    public static List<Join> getJoinInstructions(){
-        return GeneralThreadLocal.get(DzConst.JOIN_INSTRUCTIONS);
+    public static List<Join> getJoins(){
+        return GeneralThreadLocal.get(DzConst.JOINS);
     }
 
     public static void unSetForQuery(){
@@ -199,7 +199,7 @@ public class ExtraParamInjector {
         GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.RESULT_CLASS);
         GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
-        GeneralThreadLocal.unset(DzConst.JOIN_INSTRUCTIONS);
+        GeneralThreadLocal.unset(DzConst.JOINS);
         unsetExtraConds();
         unsetExtraOrConds();
     }

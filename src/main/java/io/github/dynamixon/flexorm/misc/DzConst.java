@@ -96,6 +96,6 @@ public interface DzConst {
 
     String MAIN_TABLE_ALIAS_FOR_JOIN = PREFIX+"mainTableAliasForJoin";
 
-    String JOIN_INSTRUCTIONS = PREFIX+"joinInstructions";
+    String JOINS = PREFIX+"joins";
 
 }
