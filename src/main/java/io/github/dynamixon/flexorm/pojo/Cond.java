@@ -150,6 +150,10 @@ public class Cond {
         return andOrToInner==null?CondAndOr.AND : andOrToInner;
     }
 
+    public static Cond noValueCompare(String columnName, String compareOpr) {
+        return new Cond(columnName, compareOpr, null, false);
+    }
+
     @Override
     public String toString() {
         return "Cond{" +

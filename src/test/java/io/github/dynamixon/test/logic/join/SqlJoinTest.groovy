@@ -92,7 +92,7 @@ class SqlJoinTest implements LogicTestBase{
                 selectColumns('TBL_A.id','TBL_B.int_f'),
                 joinTable('TBL_A',[
                     new Join('inner join','join_table_B','TBL_B',
-                        new Cond.Builder().columnName('TBL_A.id').compareOpr('= TBL_B.id').ignoreNull(false).build(),
+                        Cond.noValueCompare('TBL_A.id','= TBL_B.id'),
                         new Cond('TBL_A.varchar_f','qwe'),
                     )
                 ])
