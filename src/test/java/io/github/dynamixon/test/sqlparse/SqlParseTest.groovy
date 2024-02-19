@@ -7,17 +7,10 @@ import net.sf.jsqlparser.util.validation.feature.DatabaseType
 class SqlParseTest {
 
     static void main(String[] args) {
-        String sql = '''select * from 
-( select a.*, ROWNUM rnum from 
-  ( SELECT * 
-FROM   sometable
-ORDER BY name ) a 
-  where ROWNUM <= 10 )
-where rnum  >= 0;
-'''
+        String sql = '''select TBL_A.id, TBL_B.int_f from join_table_A TBL_A  left join join_table_B TBL_B on TBL_A.id = TBL_B.id  and TBL_A.varchar_f = ? where TBL_A.id = ? and TBL_B.int_f = ?'''
 
 // validate statement if it's valid for all given databases.
-        Validation validation = new Validation(Arrays.asList(DatabaseType.ORACLE), sql);
+        Validation validation = new Validation(Arrays.asList(DatabaseType.H2), sql);
         List<ValidationError> errors = validation.validate();
         println errors
     }

@@ -1,5 +1,8 @@
 package io.github.dynamixon.flexorm.misc;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * @author maojianfeng
  * @date 22-9-5
@@ -11,6 +14,7 @@ public class InterceptorContext {
     private Object delegatedResult;
     private Object realResult;
     private Long timeCost;
+    private Map<String,Object> extraContextInfo;
 
     public InterceptorContext() {
     }
@@ -68,6 +72,51 @@ public class InterceptorContext {
     public <T> T getGenericDelegateResult(){
         if(resultDelegate){
             return delegatedResult ==null?null:(T) delegatedResult;
+        }
+        return null;
+    }
+
+    public Map<String, Object> getExtraContextInfo() {
+        return extraContextInfo;
+    }
+
+    public void setExtraContextInfo(Map<String, Object> extraContextInfo) {
+        this.extraContextInfo = extraContextInfo;
+    }
+
+    public void putToExtraContextInfo(String key, Object value){
+        synchronized (InterceptorContext.class){
+            if(extraContextInfo == null){
+                extraContextInfo = new ConcurrentHashMap<>();
+            }
+            extraContextInfo.put(key, value);
+        }
+    }
+
+    public void putAllToExtraContextInfo(Map<String, Object> map){
+        if(map == null){
+            return;
+        }
+        synchronized (InterceptorContext.class){
+            if(extraContextInfo == null){
+                extraContextInfo = new ConcurrentHashMap<>();
+            }
+            extraContextInfo.putAll(map);
+        }
+    }
+
+    public <T> T removeFromExtraContextInfo(String key){
+        synchronized (InterceptorContext.class){
+            if(extraContextInfo != null){
+                return (T) extraContextInfo.remove(key);
+            }
+        }
+        return null;
+    }
+
+    public <T> T getFromExtraContextInfo(String key){
+        if(extraContextInfo != null){
+            return (T) extraContextInfo.get(key);
         }
         return null;
     }

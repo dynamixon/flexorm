@@ -38,7 +38,7 @@ class LogicTester {
         testMulti(allTests())
     }
 
-    static SqlExecutionInterceptor getDelegatedInterceptor(Object delegatedResult, Closure<?> validator, boolean spanWithin = true){
+    static SqlExecutionInterceptor getDelegatedInterceptor(Object delegatedResult, Closure<?> validator,Map<String,Object> extraInfo, boolean spanWithin = true){
         return new SqlExecutionInterceptor() {
             @Override
             boolean spanWithin() {
@@ -46,6 +46,7 @@ class LogicTester {
             }
             @Override
             void beforeExecution(InterceptorContext interceptorContext){
+                interceptorContext.putAllToExtraContextInfo(extraInfo)
                 interceptorContext.setDelegatedResult(delegatedResult)
             }
             @Override
@@ -53,6 +54,10 @@ class LogicTester {
                 validator.call(interceptorContext)
             }
         }
+    }
+
+    static SqlExecutionInterceptor getDelegatedInterceptor(Object delegatedResult, Closure<?> validator, boolean spanWithin = true){
+        return getDelegatedInterceptor(delegatedResult,validator,[:],spanWithin)
     }
 
     static QueryEntry dialectQE(String dialectType = DialectConst.MYSQL){
