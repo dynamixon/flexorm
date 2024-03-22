@@ -11,7 +11,7 @@
   <groupId>io.github.dynamixon</groupId>
   <artifactId>flexorm</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>1.4.0-SNAPSHOT</version>
 
   <name>flexorm</name>
   <url>https://maven.apache.org</url>

@@ -614,11 +614,11 @@ public class QueryEntry {
         return exist(obj.getClass(), this::fromTableDomain, obj);
     }
 
-    public int count(Class<?> clazz, List<Cond> conds) {
-        int count = 0;
+    public int count(String table, List<Cond> conds) {
+        int count;
         try {
             QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
-                .targetTable(TableLoc.findTableName(clazz,getDataSource()))
+                .targetTable(table)
                 .onlyCount(true)
                 .resultClass(CountInfo.class)
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
@@ -631,6 +631,10 @@ public class QueryEntry {
             ExtraParamInjector.unsetExtraOrConds();
         }
         return count;
+    }
+
+    public int count(Class<?> clazz, List<Cond> conds) {
+        return count(TableLoc.findTableName(clazz,getDataSource()),conds);
     }
 
     public <E> int count(Class<?> clazz, CondCrafter<E> condCrafter, E primalCond) {
