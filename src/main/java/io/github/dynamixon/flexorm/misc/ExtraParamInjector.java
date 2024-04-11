@@ -4,6 +4,7 @@ import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.pojo.Cond;
 import io.github.dynamixon.flexorm.pojo.Join;
 import io.github.dynamixon.flexorm.pojo.OrderCond;
+import io.github.dynamixon.flexorm.pojo.Paginator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,6 +36,11 @@ public class ExtraParamInjector {
 
     public static ParamPrep order(OrderCond... orderConds){
         PagingInjector.offset(null,null,false,orderConds);
+        return paramPrep;
+    }
+
+    public static ParamPrep paging(Paginator paginator){
+        GeneralThreadLocal.set(DzConst.PAGINATOR, paginator);
         return paramPrep;
     }
 
@@ -132,6 +138,10 @@ public class ExtraParamInjector {
         }
         GeneralThreadLocal.set(DzConst.JOINS, joins);
         return paramPrep;
+    }
+
+    public static Paginator getPaginator(){
+        return GeneralThreadLocal.get((DzConst.PAGINATOR));
     }
 
     public static Integer getTotalCount(){

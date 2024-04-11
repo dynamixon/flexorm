@@ -14,6 +14,7 @@ import io.github.dynamixon.flexorm.pojo.Cond
 import io.github.dynamixon.flexorm.pojo.Config
 import io.github.dynamixon.flexorm.pojo.Null
 import io.github.dynamixon.flexorm.pojo.OrderCond
+import io.github.dynamixon.flexorm.pojo.Paginator
 import io.github.dynamixon.test.transaction.TransactionTest
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.collections.MapUtils
@@ -182,6 +183,7 @@ class CommonTest {
                     pagingTest()
                     paging4Map()
                     offsetTest()
+                    paginatorTest()
                     groupByHaving()
                     nameMismatch()
                     extraCondQuery()
@@ -591,6 +593,24 @@ class CommonTest {
         def subList = list.subList(3, (5 + 3))
         subList.eachWithIndex { def record, int i ->
             record.getId() == otherList[i].getId()
+        }
+    }
+
+    void paginatorTest(){
+        logger.info ' -- paginatorTest -- '
+        Paginator paginator = Paginator.paging(1,10,true,new OrderCond("id","desc"))
+        List<? extends DummyTable> list = qe.prep(
+            paging(paginator),
+            sqlId(verboseSqlId("paging"))
+        ).searchObjects(getCurrentClass().newInstance())
+        def count = paginator.getTotalCount()
+        assert list.size() == 10
+        assert count == 200
+        def lastId = Integer.MAX_VALUE
+        list.each {
+            def id = MiscUtil.extractFieldValueFromObj(it,"id")
+            assert id < lastId
+            lastId = id
         }
     }
 

@@ -1,5 +1,7 @@
 package io.github.dynamixon.flexorm.misc;
 
+import io.github.dynamixon.flexorm.pojo.Paginator;
+
 /**
  * @author maojianfeng
  * @date 2021/6/15
@@ -43,12 +45,16 @@ public interface DzConst {
 
     /**
      * GeneralThreadLocal key to specify the offset of a query
+     * @see Paginator
      */
+    @Deprecated
     String OFFSET = PREFIX+"offset";
 
     /**
      * GeneralThreadLocal key to specify the limit of a query
+     * @see Paginator
      */
+    @Deprecated
     String LIMIT = PREFIX+"limit";
 
     /**
@@ -64,7 +70,9 @@ public interface DzConst {
 
     /**
      * GeneralThreadLocal key to specify whether the total record count is needed from an offset query
+     * @see Paginator
      */
+    @Deprecated
     String NEED_COUNT = PREFIX+"needCount";
 
     /**
@@ -73,8 +81,15 @@ public interface DzConst {
     String QUERY_COUNT = PREFIX+"queryCount";
 
     /**
-     * GeneralThreadLocal key to specify the order arrangement of a query
+     * GeneralThreadLocal key to specify the paging instruction of an offset query
      */
+    String PAGINATOR = PREFIX+"paginator";
+
+    /**
+     * GeneralThreadLocal key to specify the order arrangement of a query
+     * @see Paginator
+     */
+    @Deprecated
     String ORDER_CONDS = PREFIX+"orderConds";
 
     String IGNORE_COLUMNS_FROM_COND_FOR_UPDATE = PREFIX+"ignoreColumnsFromCondForUpdate";
