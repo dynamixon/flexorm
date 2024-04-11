@@ -77,6 +77,21 @@ class SqlJoinTest implements LogicTestBase{
                 ])
             ).findObjects(JoinTableA, new Cond('id',123L),new Cond('TBL_B.int_f',456),new Cond('TBL_C.varchar_f','abc'))
         }
+        validator = genValidator(
+            'select * from join_table_A TBL_A  left join join_table_B TBL_B on TBL_A.id  = TBL_B.id  right join join_table_C TBL_C on TBL_A.id  = TBL_C.id  where TBL_A.id = ? and TBL_B.int_f = ? and TBL_C.varchar_f = ?',
+            [123L,456,'abc']
+        )
+
+        LogicTester.allQueryEntries().each {
+            it.prep(
+                sqlId(LogicTester.sqlId4Logic(it,'join-basic-all-col')),
+                intercept(LogicTester.getDelegatedInterceptor([new JoinTableA()],validator,[(DIALECT_KEY):it.getDialectType()])),
+                joinTable('TBL_A',[
+                    new LeftJoin('join_table_B','TBL_B','id','id'),
+                    new RightJoin('join_table_C','TBL_C','id','id')
+                ])
+            ).findObjects(JoinTableA, new Cond('id',123L),new Cond('TBL_B.int_f',456),new Cond('TBL_C.varchar_f','abc'))
+        }
     }
 
     static void multiConditionTest() {

@@ -288,11 +288,7 @@ public class SqlBuilder {
         } else if (qc.isOnlyCount()) {
             select.append(" count(*) as count from ");
         } else {
-            String allColumns = "*";
-            if(requireJoin){
-                allColumns = mainTableAliasForJoin+"."+allColumns;
-            }
-            select.append(" ").append(allColumns).append(" from ");
+            select.append(" * from ");
         }
         select.append(qc.getTargetTable()).append(" ").append((requireJoin&&!mainTableAliasForJoin.equals(qc.getTargetTable()))?mainTableAliasForJoin+" ":"");
 
