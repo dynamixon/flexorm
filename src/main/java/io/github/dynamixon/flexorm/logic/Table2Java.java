@@ -99,7 +99,7 @@ public class Table2Java {
             if(metaFile.exists()){
                 initMeta(new Gson().fromJson(FileUtils.readFileToString(metaFile,"utf-8"), Table2JavaMeta.class));
             }else {
-                throw new DBException("metaFilePath:"+metaFilePath+" dosen't exist!");
+                throw new DBException("metaFilePath:"+metaFilePath+" doesn't exist!");
             }
         } catch (Exception e) {
             throw new DBException(e);
@@ -263,8 +263,8 @@ public class Table2Java {
         if(StringUtils.isNotBlank(tableComment)){
             beanContent += "/** "+tableComment+" */\n";
         }
-        if(meta.isAutoColumnDetection()) {
-            beanContent += "@Table(value = \"" + tableName + "\", autoColumnDetection = true)\n";
+        if(!meta.isAutoColumnDetection()) {
+            beanContent += "@Table(value = \"" + tableName + "\", autoColumnDetection = false)\n";
         }else {
             beanContent += "@Table(\"" + tableName + "\")\n";
         }

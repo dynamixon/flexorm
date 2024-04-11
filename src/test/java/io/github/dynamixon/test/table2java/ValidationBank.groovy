@@ -15,7 +15,7 @@ import io.github.dynamixon.flexorm.annotation.Column;
 import java.util.Date;
 
 /** table comment */
-@Table("test_gen_mysql")
+@Table(value = "test_gen_mysql", autoColumnDetection = false)
 public class TestGenMySQL implements Serializable {
 
   private static final long serialVersionUID = -1L;
@@ -415,7 +415,7 @@ import java.sql.Date;
 import java.sql.Time;
 
 /** table comment */
-@Table("test_gen_postgresql")
+@Table(value = "test_gen_postgresql", autoColumnDetection = false)
 public class TestGenPostgreSql implements Serializable {
 
   private static final long serialVersionUID = -1L;
@@ -776,7 +776,7 @@ import io.github.dynamixon.flexorm.annotation.Primary;
 import io.github.dynamixon.flexorm.annotation.Column;
 import java.util.Date;
 
-@Table("test_gen_mssql")
+@Table(value = "test_gen_mssql", autoColumnDetection = false)
 public class TestGenMsSql implements Serializable {
 
   private static final long serialVersionUID = -1L;
@@ -1155,7 +1155,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.UUID;
 
-@Table("test_gen_h2")
+@Table(value = "test_gen_h2", autoColumnDetection = false)
 public class TestGenH2 implements Serializable {
 
   private static final long serialVersionUID = -1L;
@@ -1515,7 +1515,7 @@ import io.github.dynamixon.flexorm.annotation.Column;
 import java.util.Date;
 import java.util.UUID;
 
-@Table("test_gen_hsqldb")
+@Table(value = "test_gen_hsqldb", autoColumnDetection = false)
 public class TestGenHsqlDb implements Serializable {
 
   private static final long serialVersionUID = -1L;
@@ -1909,7 +1909,7 @@ import io.github.dynamixon.flexorm.annotation.Table;
 import io.github.dynamixon.flexorm.annotation.Primary;
 import io.github.dynamixon.flexorm.annotation.Column;
 
-@Table("test_gen_sqlite")
+@Table(value = "test_gen_sqlite", autoColumnDetection = false)
 public class TestGenSQLite implements Serializable {
 
   private static final long serialVersionUID = -1L;
