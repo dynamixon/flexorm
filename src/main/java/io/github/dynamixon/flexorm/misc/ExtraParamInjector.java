@@ -1,10 +1,7 @@
 package io.github.dynamixon.flexorm.misc;
 
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
-import io.github.dynamixon.flexorm.pojo.Cond;
-import io.github.dynamixon.flexorm.pojo.Join;
-import io.github.dynamixon.flexorm.pojo.OrderCond;
-import io.github.dynamixon.flexorm.pojo.Paginator;
+import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -83,6 +80,13 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
+    public static ParamPrep addCond(Cond ... conds){
+        if(conds!=null&&conds.length>0){
+            addCond(Arrays.asList(conds));
+        }
+        return paramPrep;
+    }
+
     public static ParamPrep addOrCond(List<Cond> conds){
         if(CollectionUtils.isNotEmpty(conds)){
             conds = Stream.of(getExtraOrConds(), conds)
@@ -90,6 +94,20 @@ public class ExtraParamInjector {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
             GeneralThreadLocal.set(DzConst.EXTRA_OR_CONDS, conds);
+        }
+        return paramPrep;
+    }
+
+    public static ParamPrep addOrCond(Cond ... conds){
+        if(conds!=null&&conds.length>0){
+            addOrCond(Arrays.asList(conds));
+        }
+        return paramPrep;
+    }
+
+    public static ParamPrep addColumnValuePair4Update(ColumnValuePair4Update ... columnValuePairs4Update){
+        if(columnValuePairs4Update!=null&&columnValuePairs4Update.length>0){
+            GeneralThreadLocal.set(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE, Arrays.asList(columnValuePairs4Update));
         }
         return paramPrep;
     }
@@ -172,6 +190,10 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.EXTRA_OR_CONDS);
     }
 
+    public static List<ColumnValuePair4Update> getExtraColumnValuePairs4Update(){
+        return GeneralThreadLocal.get(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE);
+    }
+
     public static boolean emptyUpdateCondAllowed(){
         Boolean allowEmptyUpdateCond = GeneralThreadLocal.get(DzConst.ALLOW_EMPTY_UPDATE_COND);
         return allowEmptyUpdateCond!=null&&allowEmptyUpdateCond;
@@ -228,6 +250,10 @@ public class ExtraParamInjector {
 
     public static void unsetExtraConds(){
         GeneralThreadLocal.unset(DzConst.EXTRA_CONDS);
+    }
+
+    public static void unsetExtraColumnValuePairs4Update(){
+        GeneralThreadLocal.unset(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE);
     }
 
     public static void unsetExtraOrConds(){

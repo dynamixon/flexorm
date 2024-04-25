@@ -250,6 +250,16 @@ public class CoreRunner {
     }
 
     public <T> T insertWithReturn(String table,Integer columnIndex, String columnName, Map<String, Object> valueMap) {
+        ScalarHandler<T> scalarHandler;
+        if(StringUtils.isBlank(columnName)){
+            scalarHandler = new ScalarHandler<>(columnIndex==null?1:columnIndex);
+        }else {
+            scalarHandler = new ScalarHandler<>(columnName);
+        }
+        return insertWithReturn(table,scalarHandler,valueMap);
+    }
+
+    public <T> T insertWithReturn(String table,ResultSetHandler<T> resultSetHandler, Map<String, Object> valueMap) {
         long start = System.currentTimeMillis();
         T rt = null;
         InterceptorContext interceptorContext = null;
@@ -261,13 +271,7 @@ public class CoreRunner {
             if(interceptorContext.isResultDelegate()){
                 rt = interceptorContext.getGenericDelegateResult();
             }else {
-                ScalarHandler<T> scalarHandler;
-                if(StringUtils.isBlank(columnName)){
-                    scalarHandler = new ScalarHandler<>(columnIndex==null?1:columnIndex);
-                }else {
-                    scalarHandler = new ScalarHandler<>(columnName);
-                }
-                rt = queryRunner.insert(sql.toString(), scalarHandler, interceptorContext.getValues());
+                rt = queryRunner.insert(sql.toString(), resultSetHandler, interceptorContext.getValues());
                 interceptorContext.setRealResult(rt);
             }
             long end = System.currentTimeMillis();

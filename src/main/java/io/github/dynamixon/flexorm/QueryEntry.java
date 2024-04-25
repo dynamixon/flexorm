@@ -16,7 +16,6 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class QueryEntry {
     private final CoreRunner coreRunner;
@@ -368,7 +367,7 @@ public class QueryEntry {
         if (records != null) {
             for (Object record : records) {
                 if (record != null) {
-                    Map<String, Object> valueMap = toFieldValueMap(record);
+                    Map<String, Object> valueMap = toColumnValueMap(record);
                     num += insert(table, valueMap);
                 }
             }
@@ -378,24 +377,27 @@ public class QueryEntry {
 
     public int insert(Object... records) {
         int num = 0;
-        if (records != null && records.length > 0) {
+        if (records != null) {
             for (Object record : records) {
                 num += insertToTable(TableLoc.findTableName(record.getClass(),getDataSource()), record);
             }
         }
         return num;
     }
+    public <T> T insertAndReturnAutoGen(Object record,ResultSetHandler<T> resultSetHandler) {
+        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),resultSetHandler, toColumnValueMap(record));
+    }
 
     public <T> T insertAndReturnAutoGen(Object record,Integer columnIndex) {
-        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),columnIndex,null, toFieldValueMap(record));
+        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),columnIndex,null, toColumnValueMap(record));
     }
 
     public <T> T insertAndReturnAutoGen(Object record,String columnName) {
-        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),null,columnName, toFieldValueMap(record));
+        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),null,columnName, toColumnValueMap(record));
     }
 
     public <T> T insertAndReturnAutoGen(Object record) {
-        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),null,null, toFieldValueMap(record));
+        return coreRunner.insertWithReturn(TableLoc.findTableName(record.getClass(),getDataSource()),null,null, toColumnValueMap(record));
     }
 
     public int batchInsertValueMapToTable(String table, int bulkSize, List<Map<String, Object>> valueMapList) {
@@ -443,7 +445,7 @@ public class QueryEntry {
         List<Map<String, Object>> valueMapList = new ArrayList<>();
         for (Object record : records) {
             if (record != null) {
-                valueMapList.add(toFieldValueMap(record));
+                valueMapList.add(toColumnValueMap(record));
             }
         }
         return batchInsertValueMapToTable(table,bulkSize,valueMapList);
@@ -472,19 +474,22 @@ public class QueryEntry {
 
     public int update(String table, Map<String, Object> updateValueMap, List<Cond> conds) {
         try {
-            List<FieldValuePair> pairs = toFullFieldValuePair(updateValueMap);
+            List<ColumnValuePair4Update> pairs = toFullColumnValuePair(updateValueMap);
             if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
                 if(CollectionUtils.isNotEmpty(conds)){
                     List<String> colNames = conds.stream().map(Cond::getColumnName).collect(Collectors.toList());
-                    pairs.removeIf(fieldValuePair -> colNames.contains(fieldValuePair.getField()));
+                    pairs.removeIf(columnValuePair4Update -> colNames.contains(columnValuePair4Update.getColumn()));
                 }
             }
             UpdateConditionBundle upCond = new UpdateConditionBundle.Builder()
                 .targetTable(table)
-                .values2Update(pairs)
+                .values2Update(MiscUtil.combineList(pairs,ExtraParamInjector.getExtraColumnValuePairs4Update()))
                 .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
                 .conditionOrList(ExtraParamInjector.getExtraOrConds())
                 .build();
+            if(CollectionUtils.isEmpty(upCond.getValues2Update())){
+                throw new DBException("There are no values to be updated");
+            }
             SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
             if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
                 throw new DBException("Update without condition! This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
@@ -493,6 +498,7 @@ public class QueryEntry {
         } finally {
             ExtraParamInjector.unsetExtraConds();
             ExtraParamInjector.unsetExtraOrConds();
+            ExtraParamInjector.unsetExtraColumnValuePairs4Update();
             ExtraParamInjector.unsetEmptyUpdateCondRestriction();
             ExtraParamInjector.unsetIgnoreColumnsFromCondForUpdate();
 
@@ -503,7 +509,7 @@ public class QueryEntry {
     }
 
     public int updateSelective(String table, Object record, List<Cond> conds) {
-        return update(table, toFieldValueMap(record), conds);
+        return update(table, toColumnValueMap(record), conds);
     }
 
     public int updateSelective(Object record, List<Cond> conds) {
@@ -528,7 +534,7 @@ public class QueryEntry {
     }
 
     public int updateSelectiveByPrimary(Object record){
-        return update(TableLoc.findTableName(record.getClass(),getDataSource()),toFieldValueMap(record,false),getPrimaryConds(record));
+        return update(TableLoc.findTableName(record.getClass(),getDataSource()), toColumnValueMap(record,false),getPrimaryConds(record));
     }
 
     public int persist(Object record, List<Cond> conds) {
@@ -563,8 +569,12 @@ public class QueryEntry {
         return persist(record, this::fromTableDomain, condObj);
     }
 
+    public int persistByPrimary(Object record){
+        return persist(record, this::getPrimaryConds, record);
+    }
+
     public int updateFull(String table, Object record, List<Cond> conds, List<String> excludeColumns, boolean includePrimary) {
-        Map<String, Object> map = toFullFieldValueMap(record,includePrimary);
+        Map<String, Object> map = toFullColumnValueMap(record,includePrimary);
         if (CollectionUtils.isNotEmpty(excludeColumns)) {
             List<String> lowercaseColNames = excludeColumns.stream().map(String::toLowerCase).collect(Collectors.toList());
             List<String> keys2Remove = new ArrayList<>();
@@ -654,7 +664,7 @@ public class QueryEntry {
 
     public List<Cond> fromTableDomain(Object obj) {
         List<Cond> conds = new ArrayList<>();
-        Map<String, Object> condMap = toFieldValueMap(obj);
+        Map<String, Object> condMap = toColumnValueMap(obj);
         condMap.forEach((fieldName, value) -> conds.add(new Cond(fieldName, value)));
         return conds;
     }
@@ -701,38 +711,35 @@ public class QueryEntry {
     }
 
     private static List<Cond> combineConds(List<Cond> conds1, List<Cond> conds2) {
-        return Stream.of(conds1, conds2)
-            .filter(CollectionUtils::isNotEmpty)
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+        return MiscUtil.combineList(conds1,conds2);
     }
 
-    private List<FieldValuePair> toFullFieldValuePair(Map<String, Object> map) {
-        List<FieldValuePair> pairs = new ArrayList<>();
+    private List<ColumnValuePair4Update> toFullColumnValuePair(Map<String, Object> map) {
+        List<ColumnValuePair4Update> pairs = new ArrayList<>();
         if (MapUtils.isNotEmpty(map)) {
             map.forEach((key, value) -> {
-                pairs.add(new FieldValuePair(key, value));
+                pairs.add(new ColumnValuePair4Update(key, value));
             });
         }
         return pairs;
     }
 
-    private Map<String, Object> toFieldValueMap(Object obj) {
-        return toFieldValueMap(obj,true);
+    private Map<String, Object> toColumnValueMap(Object obj) {
+        return toColumnValueMap(obj,true);
     }
 
-    private Map<String, Object> toFieldValueMap(Object obj, boolean includePrimary) {
-        Map<String, Object> fieldValueMap = toFullFieldValueMap(obj,includePrimary);
-        fieldValueMap.entrySet().removeIf(entry -> entry.getValue() == null);
-        return fieldValueMap;
+    private Map<String, Object> toColumnValueMap(Object obj, boolean includePrimary) {
+        Map<String, Object> columnValueMap = toFullColumnValueMap(obj,includePrimary);
+        columnValueMap.entrySet().removeIf(entry -> entry.getValue() == null);
+        return columnValueMap;
     }
 
-    private Map<String, Object> toFullFieldValueMap(Object obj) {
-        return toFullFieldValueMap(obj,true);
+    private Map<String, Object> toFullColumnValueMap(Object obj) {
+        return toFullColumnValueMap(obj,true);
     }
 
-    private Map<String, Object> toFullFieldValueMap(Object obj, boolean includePrimary) {
-        Map<String, Object> condMap = new LinkedHashMap<>();
+    private Map<String, Object> toFullColumnValueMap(Object obj, boolean includePrimary) {
+        Map<String, Object> map = new LinkedHashMap<>();
         try {
             Class<?> tableClass = obj.getClass();
             TableObjectMetaCache.initTableObjectMeta(tableClass, this);
@@ -751,12 +758,12 @@ public class QueryEntry {
                 }
                 field.setAccessible(true);
                 Object value = field.get(obj);
-                condMap.put(fieldToColumnMap.get(fieldName), value);
+                map.put(fieldToColumnMap.get(fieldName), value);
             }
         } catch (Exception e) {
             throw new DBException(e);
         }
-        return condMap;
+        return map;
     }
 
     private List<Cond> getPrimaryConds(Object obj){

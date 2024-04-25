@@ -3,7 +3,7 @@ package io.github.dynamixon.flexorm.pojo;
 import java.util.List;
 
 public class UpdateConditionBundle extends ConditionBundle {
-    private List<FieldValuePair> values2Update;
+    private List<ColumnValuePair4Update> values2Update;
 
     private UpdateConditionBundle(Builder builder) {
         setTargetTable(builder.targetTable);
@@ -12,11 +12,11 @@ public class UpdateConditionBundle extends ConditionBundle {
         setValues2Update(builder.values2Update);
     }
 
-    public List<FieldValuePair> getValues2Update() {
+    public List<ColumnValuePair4Update> getValues2Update() {
         return values2Update;
     }
 
-    public void setValues2Update(List<FieldValuePair> values2Update) {
+    public void setValues2Update(List<ColumnValuePair4Update> values2Update) {
         this.values2Update = values2Update;
     }
 
@@ -24,7 +24,7 @@ public class UpdateConditionBundle extends ConditionBundle {
         private String targetTable;
         private List<Cond> conditionAndList;
         private List<Cond> conditionOrList;
-        private List<FieldValuePair> values2Update;
+        private List<ColumnValuePair4Update> values2Update;
 
         public Builder() {
         }
@@ -44,7 +44,7 @@ public class UpdateConditionBundle extends ConditionBundle {
             return this;
         }
 
-        public Builder values2Update(List<FieldValuePair> values2Update) {
+        public Builder values2Update(List<ColumnValuePair4Update> values2Update) {
             this.values2Update = values2Update;
             return this;
         }

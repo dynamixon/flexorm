@@ -1,11 +1,13 @@
 package io.github.dynamixon.flexorm.misc;
 
+import io.github.dynamixon.flexorm.pojo.Cond;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by maojianfeng on 9/12/16.
@@ -148,5 +150,12 @@ public class MiscUtil {
         }else {
             return collection;
         }
+    }
+
+    public static <T>  List<T> combineList(List<T> l1, List<T> l2) {
+        return Stream.of(l1, l2)
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 }

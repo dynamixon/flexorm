@@ -10,6 +10,7 @@ import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode
 import io.github.dynamixon.flexorm.logic.TableLoc
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache
 import io.github.dynamixon.flexorm.misc.*
+import io.github.dynamixon.flexorm.pojo.ColumnValuePair4Update
 import io.github.dynamixon.flexorm.pojo.Cond
 import io.github.dynamixon.flexorm.pojo.Config
 import io.github.dynamixon.flexorm.pojo.Null
@@ -20,9 +21,11 @@ import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.ResultSetHandler
+import org.apache.commons.lang3.math.NumberUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.math.RoundingMode
 import java.sql.ResultSet
 import java.sql.SQLException
 
@@ -213,6 +216,7 @@ class CommonTest {
                     persist()
                     persistNoCondFail()
                     insertAndReturnAutoGen()
+                    extraColumnValuePair4Update()
                     delOne()
                     extraCondDel()
                     delNoCondFail()
@@ -407,7 +411,7 @@ class CommonTest {
         def id2Query = MiscUtil.extractFieldValueFromObj(list.get(0),"id")
         assert qe.prep(
             sqlId(verboseSqlId("extraCondCount")),
-            addCond([new Cond("id",id2Query)])
+            addCond(new Cond("id",id2Query))
         ).count(getCurrentClass().newInstance()) == 1
     }
 
@@ -701,7 +705,7 @@ class CommonTest {
 
         dbRecords = qe.prep(
             sqlId(verboseSqlId("nullCondQuery step2")),
-            addOrCond([new Cond("id", null)])
+            addOrCond(new Cond("id", null))
         ).findObjects(getCurrentClass(), new Cond('id', id))
         assert dbRecords.size()==1
         assert dbRecords.get(0).getId() == id
@@ -1468,6 +1472,24 @@ class CommonTest {
         assert autoGenValue!=null
     }
 
+    void extraColumnValuePair4Update(){
+        logger.info ' -- extraColumnValuePair4Update -- '
+        def resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step1"))).findObject(getCurrentClass())
+        def columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(getCurrentClass(), qe.getDataSource())
+        String sumTestClassField = columnToFieldMap.get(sumTestField())
+        Double valBefore = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
+
+        def record2Update = getCurrentClass().newInstance()
+        qe.prep(
+            sqlId(verboseSqlId("extraColumnValuePair4Update step2")),
+            addColumnValuePair4Update(new ColumnValuePair4Update(sumTestField(),"${sumTestField()} + 1".toString(), true))
+        ).updateSelective(record2Update, new Cond('id',resultRecord.getId()))
+
+        resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step3"))).findObject(getCurrentClass())
+        Double valAfter = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
+        compareValueEqual(valBefore+1,valAfter)
+    }
+
     void delOne(){
         logger.info ' -- delOne -- '
         List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
@@ -1630,8 +1652,8 @@ class CommonTest {
 
     static void compareValueEqual(Object origValue, Object resultValue){
         if(origValue!=null){
-            if(origValue instanceof Double){
-                assert ((Double) origValue).intValue() == ((Double) resultValue).intValue()
+            if(origValue instanceof Number){
+                assert formatDoubleNum(origValue.toString().toDouble(),1) == formatDoubleNum(resultValue.toString().toDouble(),1)
             }else if(origValue instanceof Date){
                 assert resultValue !=null
             }else if(origValue instanceof String){
@@ -1640,5 +1662,12 @@ class CommonTest {
                 assert origValue == resultValue
             }
         }
+    }
+
+    static double formatDoubleNum(Double origNum, int scale){
+        if(origNum==null){
+            return 0.0
+        }
+        return NumberUtils.toScaledBigDecimal(origNum, scale, RoundingMode.HALF_UP).doubleValue()
     }
 }

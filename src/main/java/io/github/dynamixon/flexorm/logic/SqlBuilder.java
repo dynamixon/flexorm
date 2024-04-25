@@ -329,14 +329,18 @@ public class SqlBuilder {
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
         StringBuilder update = new StringBuilder("update ").append(uc.getTargetTable()).append(" ");
-        List<FieldValuePair> values2Update = uc.getValues2Update();
+        List<ColumnValuePair4Update> values2Update = uc.getValues2Update();
         if (CollectionUtils.isNotEmpty(values2Update)) {
             update.append(" set ");
-            for (FieldValuePair pair : values2Update) {
-                String field = pair.getField();
+            for (ColumnValuePair4Update pair : values2Update) {
+                String field = pair.getColumn();
                 Object value = pair.getValue();
-                update.append(field).append("=?,");
-                values.add(value);
+                if(pair.isSqlPartValue()){
+                    update.append(field).append("=").append(value).append(",");
+                }else {
+                    update.append(field).append("=?,");
+                    values.add(value);
+                }
             }
             update.deleteCharAt(update.length() - 1);
             int origWhereLength = where.length();

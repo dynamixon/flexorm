@@ -38,6 +38,8 @@ public interface DzConst {
      */
     String EXTRA_OR_CONDS = PREFIX+"extraOrConds";
 
+    String EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE = PREFIX+"extraColumnValuePairs4Update";
+
     /**
      * GeneralThreadLocal key to specify whether empty condition for an update action is allowed
      */

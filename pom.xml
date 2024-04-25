@@ -11,7 +11,7 @@
   <groupId>io.github.dynamixon</groupId>
   <artifactId>flexorm</artifactId>
   <packaging>jar</packaging>
-  <version>1.4.0</version>
+  <version>1.4.1-SNAPSHOT</version>
 
   <name>flexorm</name>
   <url>https://maven.apache.org</url>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.5</version>
+      <version>3.10</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
