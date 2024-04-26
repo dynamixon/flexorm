@@ -5,6 +5,7 @@ package io.github.dynamixon.flexorm.pojo;
  */
 public class ColumnValuePair4Update {
     private String column;
+    private FieldInfoGetter<?> fieldInfoGetter;
     private Object value;
     private Boolean valueAsSqlPart;
 
@@ -17,8 +18,19 @@ public class ColumnValuePair4Update {
         this.valueAsSqlPart = false;
     }
 
+    public <T> ColumnValuePair4Update(FieldInfoGetter<T> fieldInfoGetter, Object value) {
+        this.fieldInfoGetter = fieldInfoGetter;
+        this.value = value;
+    }
+
     public ColumnValuePair4Update(String column, Object value, Boolean valueAsSqlPart) {
         this.column = column;
+        this.value = value;
+        this.valueAsSqlPart = valueAsSqlPart;
+    }
+
+    public <T> ColumnValuePair4Update(FieldInfoGetter<T> fieldInfoGetter, Object value, Boolean valueAsSqlPart) {
+        this.fieldInfoGetter = fieldInfoGetter;
         this.value = value;
         this.valueAsSqlPart = valueAsSqlPart;
     }
@@ -29,6 +41,14 @@ public class ColumnValuePair4Update {
 
     public void setColumn(String column) {
         this.column = column;
+    }
+
+    public FieldInfoGetter<?> getFieldInfoGetter() {
+        return fieldInfoGetter;
+    }
+
+    public void setFieldInfoGetter(FieldInfoGetter<?> fieldInfoGetter) {
+        this.fieldInfoGetter = fieldInfoGetter;
     }
 
     public Object getValue() {

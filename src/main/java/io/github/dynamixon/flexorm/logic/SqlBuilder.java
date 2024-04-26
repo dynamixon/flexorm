@@ -324,7 +324,7 @@ public class SqlBuilder {
     }
 
     public SqlPreparedBundle composeUpdate(UpdateConditionBundle uc) {
-        resolveColumnNameFromFieldInfoGetterBase(uc);
+        resolveColumnNameFromFieldInfoGetter(uc);
         SqlPreparedBundle sp = new SqlPreparedBundle();
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
@@ -398,6 +398,15 @@ public class SqlBuilder {
         }
         resolveColumnNameFromFieldInfoGetterBase(qryCondition);
         FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter(coreRunner,qryCondition.getHavingConds());
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter4OrderCond(coreRunner,qryCondition.getOrderConds());
+    }
+
+    public void resolveColumnNameFromFieldInfoGetter(UpdateConditionBundle updateCondition){
+        if(updateCondition==null){
+            return;
+        }
+        FieldInfoMethodRefUtil.resolveColumnNameFromFieldInfoGetter4ColumnValuePair4Update(coreRunner,updateCondition.getValues2Update());
+        resolveColumnNameFromFieldInfoGetterBase(updateCondition);
     }
 
     public void resolveColumnNameFromFieldInfoGetterBase(ConditionBundle conditionBundle){

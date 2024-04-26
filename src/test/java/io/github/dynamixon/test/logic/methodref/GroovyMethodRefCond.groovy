@@ -1,6 +1,8 @@
 package io.github.dynamixon.test.logic.methodref
 
+import io.github.dynamixon.flexorm.pojo.ColumnValuePair4Update
 import io.github.dynamixon.flexorm.pojo.Cond
+import io.github.dynamixon.flexorm.pojo.OrderCond
 import io.github.dynamixon.moredata.LogicTableA
 
 /**
@@ -15,5 +17,13 @@ class GroovyMethodRefCond {
 
     static Cond allLowerGetterCond(){
         return new Cond(LogicTableA::getalllowergetter,'abc')
+    }
+
+    static OrderCond allLowerGetterOrderCond(){
+        return new OrderCond(LogicTableA::getalllowergetter,"desc")
+    }
+
+    static ColumnValuePair4Update allLowerGetterColumnValuePair4Update(){
+        return new ColumnValuePair4Update(LogicTableA::getalllowergetter,"xxx")
     }
 }

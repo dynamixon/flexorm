@@ -64,37 +64,80 @@ public class FieldInfoMethodRefUtil {
                 if(fieldInfoGetter == null){
                     continue;
                 }
-                MethodRef methodRef = getMethodRef(fieldInfoGetter);
-                String propName = methodToProperty(methodRef.getMethodName());
-                Class<?> tableClass = methodRef.getClazz();
-                TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
-                MetaHolder metaHolder = TableObjectMetaCache.getMetaMap().get(coreRunner.getDataSource());
-                Map<Class<?>, Map<String, String>> fieldToColumnClassMap = metaHolder.getFieldToColumnClassMap();
-                if(MapUtils.isEmpty(fieldToColumnClassMap)){
-                    FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
-                    throw new RuntimeException("No fieldToColumn Info for "+tableClass);
-                }
-                Map<String, String> fieldToColumnMap = fieldToColumnClassMap.get(tableClass);
-                if(MapUtils.isEmpty(fieldToColumnMap)){
-                    FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
-                    throw new RuntimeException("No column info found for tableClass="+tableClass);
-                }
-                String colName = fieldToColumnMap.get(propName);
-                if(StringUtils.isBlank(colName)){
-                    Map<String,String> searchMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                    searchMap.putAll(fieldToColumnMap);
-                    colName = searchMap.get(propName);
-                    if(StringUtils.isBlank(colName)) {
-                        FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
-                        throw new RuntimeException("No colName Info for " + propName + ", tableClass=" + tableClass);
-                    }
-                }
-                cond.setColumnName(colName);
+                cond.setColumnName(obtainColumnNameFromFieldInfoGetter(coreRunner,fieldInfoGetter));
             }
         } catch (Exception e) {
             throw new DBException(e);
         }
     }
+
+    public static void resolveColumnNameFromFieldInfoGetter4OrderCond(CoreRunner coreRunner, List<OrderCond> orderConds){
+        if(CollectionUtils.isEmpty(orderConds)){
+            return;
+        }
+        for (OrderCond orderCond : orderConds) {
+            if(orderCond==null){
+                continue;
+            }
+            if(StringUtils.isNotBlank(orderCond.getOrderByColumn())){
+                continue;
+            }
+            FieldInfoGetter<?> fieldInfoGetter = orderCond.getFieldInfoGetter();
+            if(fieldInfoGetter == null){
+                continue;
+            }
+            orderCond.setOrderByColumn(obtainColumnNameFromFieldInfoGetter(coreRunner,fieldInfoGetter));
+        }
+    }
+
+    public static void resolveColumnNameFromFieldInfoGetter4ColumnValuePair4Update(CoreRunner coreRunner, List<ColumnValuePair4Update> columnValuePair4UpdateList){
+        if(CollectionUtils.isEmpty(columnValuePair4UpdateList)){
+            return;
+        }
+        for (ColumnValuePair4Update columnValuePair4Update : columnValuePair4UpdateList) {
+            if(columnValuePair4Update==null){
+                continue;
+            }
+            if(StringUtils.isNotBlank(columnValuePair4Update.getColumn())){
+                continue;
+            }
+            FieldInfoGetter<?> fieldInfoGetter = columnValuePair4Update.getFieldInfoGetter();
+            if(fieldInfoGetter == null){
+                continue;
+            }
+            columnValuePair4Update.setColumn(obtainColumnNameFromFieldInfoGetter(coreRunner,fieldInfoGetter));
+        }
+    }
+
+    private static String obtainColumnNameFromFieldInfoGetter(CoreRunner coreRunner,FieldInfoGetter<?> fieldInfoGetter){
+        MethodRef methodRef = getMethodRef(fieldInfoGetter);
+        String propName = methodToProperty(methodRef.getMethodName());
+        Class<?> tableClass = methodRef.getClazz();
+        TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
+        MetaHolder metaHolder = TableObjectMetaCache.getMetaMap().get(coreRunner.getDataSource());
+        Map<Class<?>, Map<String, String>> fieldToColumnClassMap = metaHolder.getFieldToColumnClassMap();
+        if(MapUtils.isEmpty(fieldToColumnClassMap)){
+            FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
+            throw new RuntimeException("No fieldToColumn Info for "+tableClass);
+        }
+        Map<String, String> fieldToColumnMap = fieldToColumnClassMap.get(tableClass);
+        if(MapUtils.isEmpty(fieldToColumnMap)){
+            FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
+            throw new RuntimeException("No column info found for tableClass="+tableClass);
+        }
+        String colName = fieldToColumnMap.get(propName);
+        if(StringUtils.isBlank(colName)){
+            Map<String,String> searchMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            searchMap.putAll(fieldToColumnMap);
+            colName = searchMap.get(propName);
+            if(StringUtils.isBlank(colName)) {
+                FIELD_INFO_GETTER_CACHE.invalidate(fieldInfoGetter);
+                throw new RuntimeException("No colName Info for " + propName + ", tableClass=" + tableClass);
+            }
+        }
+        return colName;
+    }
+
     private static String methodToProperty(String name) {
         if (name.startsWith("is")) {
             name = name.substring(2);
