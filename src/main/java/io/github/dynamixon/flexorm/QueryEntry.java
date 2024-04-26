@@ -341,6 +341,19 @@ public class QueryEntry {
         return findObject(TableLoc.findTableName(clazz,getDataSource()), Arrays.asList(conds), clazz);
     }
 
+    public <T> T findOneValue(String table, String columnName, List<Cond> conds){
+        Map<String,Object> record = findObject(table,conds,Map.class);
+        return (record==null||record.get(columnName)==null)?null:(T)record.get(columnName);
+    }
+
+    public <T> T findOneValue(Class<?> clazz, String columnOrFieldName, List<Cond> conds){
+        return findOneValue(TableLoc.findTableName(clazz,getDataSource()),determineColumnName(clazz,columnOrFieldName),conds);
+    }
+
+    public <T> T findOneValue(Class<?> clazz, String columnOrFieldName, Cond... conds){
+        return findOneValue(clazz, columnOrFieldName, Arrays.asList(conds));
+    }
+
     public <T> List<T> searchObjectsT(T obj) {
         return searchObjects(obj);
     }
@@ -566,11 +579,26 @@ public class QueryEntry {
     }
 
     public <T> int persistAutoCond(T record, T condObj) {
+        ExtraParamInjector.ignoreColumnsFromCondForUpdate();
         return persist(record, this::fromTableDomain, condObj);
     }
 
     public int persistByPrimary(Object record){
+        ExtraParamInjector.ignoreColumnsFromCondForUpdate();
         return persist(record, this::getPrimaryConds, record);
+    }
+
+    public int increment(String table, String columnName, long incr, List<Cond> conds){
+        ExtraParamInjector.addColumnValuePair4Update(new ColumnValuePair4Update(columnName,columnName+(incr>=0?" + ":" - ")+Math.abs(incr), true));
+        return update(table,null,conds);
+    }
+
+    public int increment(Class<?> tableClass, String columnOrFieldName, long incr, List<Cond> conds){
+        return increment(TableLoc.findTableName(tableClass,getDataSource()),determineColumnName(tableClass,columnOrFieldName),incr,conds);
+    }
+
+    public int increment(Class<?> tableClass, String columnOrFieldName, long incr, Cond... conds){
+        return increment(tableClass,columnOrFieldName,incr,Arrays.asList(conds));
     }
 
     public int updateFull(String table, Object record, List<Cond> conds, List<String> excludeColumns, boolean includePrimary) {
@@ -699,7 +727,7 @@ public class QueryEntry {
                     match = true;
                 }
                 if (!match) {
-                    throw new DBException("fieldOrColumn:" + fieldOrColumn + " can't be recognized!");
+                    throw new IllegalArgumentException("fieldOrColumn:" + fieldOrColumn + " can't be recognized!");
                 }
                 field.setAccessible(true);
                 conds.add(new Cond(colName, field.get(obj)));
@@ -708,6 +736,19 @@ public class QueryEntry {
             throw new DBException(e);
         }
         return conds;
+    }
+
+    private String determineColumnName(Class<?> tableClass, String fieldOrColumn){
+        TableObjectMetaCache.initTableObjectMeta(tableClass, this);
+        Map<String, String> fieldToColumnMap = TableObjectMetaCache.getFieldToColumnMap(tableClass,getDataSource());
+        Map<String, String> columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(tableClass,getDataSource());
+        if (fieldToColumnMap.containsKey(fieldOrColumn)) {
+            return fieldToColumnMap.get(fieldOrColumn);
+        }
+        if (columnToFieldMap.containsKey(fieldOrColumn)) {
+            return fieldOrColumn;
+        }
+        throw new IllegalArgumentException("fieldOrColumn:" + fieldOrColumn + " can't be recognized!");
     }
 
     private static List<Cond> combineConds(List<Cond> conds1, List<Cond> conds2) {

@@ -336,9 +336,9 @@ public class SqlBuilder {
                 String field = pair.getColumn();
                 Object value = pair.getValue();
                 if(pair.isSqlPartValue()){
-                    update.append(field).append("=").append(value).append(",");
+                    update.append(field).append(" = ").append(value).append(",");
                 }else {
-                    update.append(field).append("=?,");
+                    update.append(field).append(" = ?,");
                     values.add(value);
                 }
             }

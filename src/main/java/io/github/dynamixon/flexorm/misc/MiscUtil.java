@@ -1,6 +1,5 @@
 package io.github.dynamixon.flexorm.misc;
 
-import io.github.dynamixon.flexorm.pojo.Cond;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.lang.reflect.Array;
@@ -152,8 +151,9 @@ public class MiscUtil {
         }
     }
 
-    public static <T>  List<T> combineList(List<T> l1, List<T> l2) {
-        return Stream.of(l1, l2)
+    @SafeVarargs
+    public static <T> List<T> combineList(List<T> ... values) {
+        return Stream.of(values)
                 .filter(CollectionUtils::isNotEmpty)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());

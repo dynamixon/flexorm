@@ -181,6 +181,7 @@ class CommonTest {
                     genericQry4Map()
                     genericNamedParamQry()
                     querySingleAndExist()
+                    findOneValueTest()
                     selectColumnsTest()
                     orderTest()
                     pagingTest()
@@ -508,6 +509,17 @@ class CommonTest {
 
         assert qe.prep(sqlId(verboseSqlId("querySingleAndExist step4")))
             .exist(getCurrentClass())
+    }
+
+    void findOneValueTest(){
+        logger.info ' -- findOneValueTest -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        String mismatchedNameVal = MiscUtil.extractFieldValueFromObj(record,'mismatchedName')
+        String rt = qe.findOneValue(getCurrentClass(),'name_mismatch_f', new Cond('id',record.getId()))
+        assert mismatchedNameVal == rt
+        rt = qe.findOneValue(getCurrentClass(),'mismatchedName', new Cond('id',record.getId()))
+        assert mismatchedNameVal == rt
     }
 
     void selectColumnsTest(){
@@ -1418,9 +1430,15 @@ class CommonTest {
             sqlId(verboseSqlId("persist step5"))
         ).persist(record,new Cond(idCol,maxId))
         assert persistNum == 1
-        int afterPersistUpdateCount = qe.prep(
+        MiscUtil.setValue(record,'id',idInt()?maxId.toString().toDouble().toInteger():maxId.toString().toDouble().toLong())
+        persistNum = qe.prep(
             sqlId(verboseSqlId("persist step6"))
+        ).persistByPrimary(record)
+        assert persistNum == 1
+        int afterPersistUpdateCount = qe.prep(
+            sqlId(verboseSqlId("persist step7"))
         ).count(currentClass)
+
         assert afterPersistUpdateCount == afterPersistInsertCount
     }
 
@@ -1477,17 +1495,31 @@ class CommonTest {
         def resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step1"))).findObject(getCurrentClass())
         def columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(getCurrentClass(), qe.getDataSource())
         String sumTestClassField = columnToFieldMap.get(sumTestField())
-        Double valBefore = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
+        Double valFlag = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
 
+        def idCond = new Cond('id', resultRecord.getId())
         def record2Update = getCurrentClass().newInstance()
         qe.prep(
             sqlId(verboseSqlId("extraColumnValuePair4Update step2")),
             addColumnValuePair4Update(new ColumnValuePair4Update(sumTestField(),"${sumTestField()} + 1".toString(), true))
-        ).updateSelective(record2Update, new Cond('id',resultRecord.getId()))
+        ).updateSelective(record2Update, idCond)
 
-        resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step3"))).findObject(getCurrentClass())
+        resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step3"))).findObject(getCurrentClass(), idCond)
         Double valAfter = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
-        compareValueEqual(valBefore+1,valAfter)
+        compareValueEqual(valFlag+1,valAfter)
+
+        //increment test
+        valFlag = valAfter
+        qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step4"))).increment(getCurrentClass(),sumTestField(), 2L, idCond)
+        resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step5"))).findObject(getCurrentClass(), idCond)
+        valAfter = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
+        compareValueEqual(valFlag+2,valAfter)
+
+        valFlag = valAfter
+        qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step6"))).increment(getCurrentClass(),sumTestField(), -1L, idCond)
+        resultRecord = qe.prep(sqlId(verboseSqlId("extraColumnValuePair4Update step7"))).findObject(getCurrentClass(), idCond)
+        valAfter = MiscUtil.extractFieldValueFromObj(resultRecord,sumTestClassField).toString().toDouble()
+        compareValueEqual(valFlag-1,valAfter)
     }
 
     void delOne(){

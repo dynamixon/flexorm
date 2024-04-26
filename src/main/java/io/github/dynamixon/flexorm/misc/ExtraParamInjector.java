@@ -6,10 +6,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author mjf
@@ -71,43 +68,42 @@ public class ExtraParamInjector {
 
     public static ParamPrep addCond(List<Cond> conds){
         if(CollectionUtils.isNotEmpty(conds)){
-            conds = Stream.of(getExtraConds(), conds)
-                .filter(CollectionUtils::isNotEmpty)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-            GeneralThreadLocal.set(DzConst.EXTRA_CONDS, conds);
+            GeneralThreadLocal.set(DzConst.EXTRA_CONDS, MiscUtil.combineList(getExtraConds(),conds));
         }
         return paramPrep;
     }
 
     public static ParamPrep addCond(Cond ... conds){
         if(conds!=null&&conds.length>0){
-            addCond(Arrays.asList(conds));
+            return addCond(Arrays.asList(conds));
         }
         return paramPrep;
     }
 
     public static ParamPrep addOrCond(List<Cond> conds){
         if(CollectionUtils.isNotEmpty(conds)){
-            conds = Stream.of(getExtraOrConds(), conds)
-                .filter(CollectionUtils::isNotEmpty)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-            GeneralThreadLocal.set(DzConst.EXTRA_OR_CONDS, conds);
+            GeneralThreadLocal.set(DzConst.EXTRA_OR_CONDS, MiscUtil.combineList(getExtraOrConds(), conds));
         }
         return paramPrep;
     }
 
     public static ParamPrep addOrCond(Cond ... conds){
         if(conds!=null&&conds.length>0){
-            addOrCond(Arrays.asList(conds));
+            return addOrCond(Arrays.asList(conds));
+        }
+        return paramPrep;
+    }
+
+    public static ParamPrep addColumnValuePair4Update(List<ColumnValuePair4Update> columnValuePairs4Update){
+        if(CollectionUtils.isNotEmpty(columnValuePairs4Update)){
+            GeneralThreadLocal.set(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE, MiscUtil.combineList(getExtraColumnValuePairs4Update(),columnValuePairs4Update));
         }
         return paramPrep;
     }
 
     public static ParamPrep addColumnValuePair4Update(ColumnValuePair4Update ... columnValuePairs4Update){
         if(columnValuePairs4Update!=null&&columnValuePairs4Update.length>0){
-            GeneralThreadLocal.set(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE, Arrays.asList(columnValuePairs4Update));
+            return addColumnValuePair4Update(Arrays.asList(columnValuePairs4Update));
         }
         return paramPrep;
     }
