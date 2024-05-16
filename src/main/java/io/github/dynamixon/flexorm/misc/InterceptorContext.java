@@ -48,6 +48,10 @@ public class InterceptorContext {
         return delegatedResult;
     }
 
+    public void setResultDelegate(boolean resultDelegate) {
+        this.resultDelegate = resultDelegate;
+    }
+
     public void setDelegatedResult(Object delegatedResult) {
         this.delegatedResult = delegatedResult;
         this.resultDelegate = true;
@@ -70,10 +74,16 @@ public class InterceptorContext {
     }
 
     public <T> T getGenericDelegateResult(){
-        if(resultDelegate){
-            return delegatedResult ==null?null:(T) delegatedResult;
+        if(!resultDelegate){
+            return null;
         }
-        return null;
+        if(delegatedResult == null){
+            return null;
+        }
+        if(delegatedResult instanceof DelegatedResultGenerator){
+            return (T)((DelegatedResultGenerator) delegatedResult).generate(this);
+        }
+        return (T) delegatedResult;
     }
 
     public Map<String, Object> getExtraContextInfo() {
