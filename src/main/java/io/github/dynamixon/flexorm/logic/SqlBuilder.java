@@ -138,7 +138,7 @@ public class SqlBuilder {
     }
 
     private void fillJoinPart(QueryConditionBundle qc, StringBuilder select, List<Object> values) {
-        List<Join> joins = qc.getJoinInstructions();
+        List<Join> joins = qc.getJoins();
         if(CollectionUtils.isEmpty(joins)){
             return;
         }
@@ -203,7 +203,7 @@ public class SqlBuilder {
     }
 
     private String determineTableAliasForJoin(QueryConditionBundle qc) {
-        if(CollectionUtils.isEmpty(qc.getJoinInstructions())){
+        if(CollectionUtils.isEmpty(qc.getJoins())){
             return null;
         }
         return StringUtils.isBlank(qc.getTableAliasForJoin())?qc.getTargetTable():qc.getTableAliasForJoin();
@@ -211,6 +211,9 @@ public class SqlBuilder {
 
     private void resolveForJoin(QueryConditionBundle qc){
         Class<?> tableClass = qc.getTableClass();
+        if(tableClass==null){
+            return;
+        }
         String tableAliasForJoin = qc.getTableAliasForJoin();
         TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
         Map<String, String> columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(tableClass,coreRunner.getDataSource());
@@ -278,15 +281,15 @@ public class SqlBuilder {
         StringBuilder select = new StringBuilder("select");
         List<String> selectColumns = qc.getSelectColumns();
         String mainTableAliasForJoin = determineTableAliasForJoin(qc);
-        boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin) && CollectionUtils.isNotEmpty(qc.getJoinInstructions());
-        if (selectColumns != null && !selectColumns.isEmpty()) {
+        boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin) && CollectionUtils.isNotEmpty(qc.getJoins());
+        if (qc.isOnlyCount()) {
+            select.append(" count(*) as count from ");
+        } else if (selectColumns != null && !selectColumns.isEmpty()) {
             for (String selectColumn : selectColumns) {
                 select.append(" ").append(selectColumn).append(",");
             }
             select.deleteCharAt(select.length() - 1);
             select.append(" from ");
-        } else if (qc.isOnlyCount()) {
-            select.append(" count(*) as count from ");
         } else {
             select.append(" * from ");
         }

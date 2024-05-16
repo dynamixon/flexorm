@@ -27,7 +27,7 @@ public class QueryConditionBundle extends ConditionBundle {
         setSelectColumns(builder.selectColumns);
         setOnlyCount(builder.onlyCount);
         setTableAliasForJoin(builder.tableAliasForJoin);
-        setJoinInstructions(builder.joins);
+        setJoins(builder.joins);
         setGroupByColumns(builder.groupByColumns);
         setHavingConds(builder.havingConds);
         setOrderConds(builder.orderConds);
@@ -75,11 +75,11 @@ public class QueryConditionBundle extends ConditionBundle {
         this.tableAliasForJoin = tableAliasForJoin;
     }
 
-    public List<Join> getJoinInstructions() {
+    public List<Join> getJoins() {
         return joins;
     }
 
-    public void setJoinInstructions(List<Join> joins) {
+    public void setJoins(List<Join> joins) {
         this.joins = joins;
     }
 
@@ -124,6 +124,11 @@ public class QueryConditionBundle extends ConditionBundle {
     }
 
     public static final class Builder {
+        private String targetTable;
+        private List<Cond> conditionAndList;
+        private List<Cond> conditionOrList;
+        private Class<?> tableClass;
+        private Class<?> resultClass;
         private List<String> selectColumns;
         private boolean onlyCount;
         private String tableAliasForJoin;
@@ -133,22 +138,42 @@ public class QueryConditionBundle extends ConditionBundle {
         private List<OrderCond> orderConds;
         private Integer offset;
         private Integer limit;
-        private List<Cond> conditionAndList;
-        private List<Cond> conditionOrList;
-        private Class<?> tableClass;
-        private Class<?> resultClass;
-        private String targetTable;
 
         public Builder() {
         }
 
-        public Builder selectColumns(List<String> selectColumns) {
-            this.selectColumns = selectColumns;
+        public Builder targetTable(String val) {
+            targetTable = val;
             return this;
         }
 
-        public Builder onlyCount(boolean onlyCount) {
-            this.onlyCount = onlyCount;
+        public Builder conditionAndList(List<Cond> val) {
+            conditionAndList = val;
+            return this;
+        }
+
+        public Builder conditionOrList(List<Cond> val) {
+            conditionOrList = val;
+            return this;
+        }
+
+        public Builder tableClass(Class<?> val) {
+            tableClass = val;
+            return this;
+        }
+
+        public Builder resultClass(Class<?> val) {
+            resultClass = val;
+            return this;
+        }
+
+        public Builder selectColumns(List<String> val) {
+            selectColumns = val;
+            return this;
+        }
+
+        public Builder onlyCount(boolean val) {
+            onlyCount = val;
             return this;
         }
 
@@ -177,48 +202,18 @@ public class QueryConditionBundle extends ConditionBundle {
             return this;
         }
 
-        public Builder orderByConds(List<OrderCond> orderConds) {
-            this.orderConds = orderConds;
+        public Builder offset(Integer val) {
+            offset = val;
             return this;
         }
 
-        public Builder offset(Integer offset) {
-            this.offset = offset;
-            return this;
-        }
-
-        public Builder limit(Integer limit) {
-            this.limit = limit;
+        public Builder limit(Integer val) {
+            limit = val;
             return this;
         }
 
         public QueryConditionBundle build() {
             return new QueryConditionBundle(this);
-        }
-
-        public Builder conditionAndList(List<Cond> conditionAndList) {
-            this.conditionAndList = conditionAndList;
-            return this;
-        }
-
-        public Builder conditionOrList(List<Cond> conditionOrList) {
-            this.conditionOrList = conditionOrList;
-            return this;
-        }
-
-        public Builder tableClass(Class<?> val) {
-            tableClass = val;
-            return this;
-        }
-
-        public Builder resultClass(Class<?> resultClass) {
-            this.resultClass = resultClass;
-            return this;
-        }
-
-        public Builder targetTable(String targetTable) {
-            this.targetTable = targetTable;
-            return this;
         }
     }
 }

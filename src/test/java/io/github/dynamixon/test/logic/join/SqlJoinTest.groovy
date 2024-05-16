@@ -1,64 +1,23 @@
 package io.github.dynamixon.test.logic.join
 
-import io.github.dynamixon.flexorm.dialect.DialectConst
-import io.github.dynamixon.flexorm.misc.InterceptorContext
-import io.github.dynamixon.flexorm.pojo.Cond
-import io.github.dynamixon.flexorm.pojo.Join
-import io.github.dynamixon.flexorm.pojo.LeftJoin
-import io.github.dynamixon.flexorm.pojo.OrderCond
-import io.github.dynamixon.flexorm.pojo.RightJoin
+
+import io.github.dynamixon.flexorm.pojo.*
 import io.github.dynamixon.moredata.JoinTableA
 import io.github.dynamixon.test.logic.LogicTestBase
 import io.github.dynamixon.test.logic.LogicTester
-import net.sf.jsqlparser.util.validation.Validation
-import net.sf.jsqlparser.util.validation.ValidationError
-import net.sf.jsqlparser.util.validation.feature.DatabaseType
 import org.junit.Test
 
 import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.*
+import static io.github.dynamixon.test.logic.LogicTester.genValidator
+import static io.github.dynamixon.test.logic.LogicTester.DIALECT_KEY
 
 class SqlJoinTest implements LogicTestBase{
-
-    private static final String DIALECT_KEY = 'DIALECT_KEY'
-
-    static Map<String, DatabaseType> sqlParseDbTypeMap(){
-        return [
-            (DialectConst.MYSQL):DatabaseType.MYSQL,
-            (DialectConst.H2):DatabaseType.H2,
-            (DialectConst.PG):DatabaseType.POSTGRESQL,
-            (DialectConst.MSSQL):DatabaseType.SQLSERVER,
-        ]
-    }
 
     @Test
     @Override
     void test() {
         basicTest()
         multiConditionTest()
-    }
-
-    static Closure<?> genValidator(String expectedSql, List<Object> expectedValues) {
-        return { InterceptorContext interceptorContext ->
-            def sql = interceptorContext.getSql()
-            def values = interceptorContext.values
-            println "sql="+sql
-            println "values="+values
-            assert sql == expectedSql
-            assert values.size() == expectedValues.size()
-            values?.eachWithIndex { value, index ->
-                assert value == expectedValues[index]
-            }
-            String dialectType = interceptorContext.getFromExtraContextInfo(DIALECT_KEY)
-            def databaseType = sqlParseDbTypeMap().get(dialectType)
-            if(databaseType!=null){
-                Validation validation = new Validation(Collections.singletonList(databaseType), sql)
-                List<ValidationError> errors = validation.validate()
-                assert errors.size() == 0
-            }else{
-                println "dialectType:"+dialectType+" ignored for sql parse validation"
-            }
-        }
-
     }
 
     static void basicTest() {

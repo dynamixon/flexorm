@@ -56,7 +56,7 @@ public class PagingInjector {
         GeneralThreadLocal.unset(DzConst.QUERY_COUNT);
     }
 
-    public static void unSet(){
+    public static void unset(){
         GeneralThreadLocal.unset(DzConst.PAGINATOR);
     }
 }

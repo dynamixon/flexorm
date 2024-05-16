@@ -7,6 +7,9 @@ import io.github.dynamixon.flexorm.misc.InterceptorContext
 import io.github.dynamixon.flexorm.misc.SqlExecutionInterceptor
 import io.github.dynamixon.flexorm.pojo.Config
 import io.github.dynamixon.test.CommonInfo
+import net.sf.jsqlparser.util.validation.Validation
+import net.sf.jsqlparser.util.validation.ValidationError
+import net.sf.jsqlparser.util.validation.feature.DatabaseType
 import org.junit.Test
 import org.reflections.Reflections
 
@@ -18,6 +21,17 @@ import static org.reflections.scanners.Scanners.SubTypes
 class LogicTester {
 
     private static Map<String,QueryEntry> dialectQEMap = new ConcurrentHashMap<>()
+
+    public static final String DIALECT_KEY = 'DIALECT_KEY'
+
+    static Map<String, DatabaseType> sqlParseDbTypeMap(){
+        return [
+            (DialectConst.MYSQL):DatabaseType.MYSQL,
+            (DialectConst.H2):DatabaseType.H2,
+            (DialectConst.PG):DatabaseType.POSTGRESQL,
+            (DialectConst.MSSQL):DatabaseType.SQLSERVER,
+        ]
+    }
     static {
         DialectConst.class.getDeclaredFields().each {
             String dialect = it.get(null)
@@ -81,5 +95,29 @@ class LogicTester {
     }
     static String sqlId4Logic(QueryEntry queryEntry,String extra = ''){
         return "LogicTest:[${queryEntry.getDialectType()}]"+ (extra?" ${extra}":'')
+    }
+
+    static Closure<?> genValidator(String expectedSql, List<Object> expectedValues) {
+        return { InterceptorContext interceptorContext ->
+            def sql = interceptorContext.getSql()
+            def values = interceptorContext.values
+            println "sql="+sql
+            println "values="+values
+            assert sql == expectedSql
+            assert values.size() == expectedValues.size()
+            values?.eachWithIndex { value, index ->
+                assert value == expectedValues[index]
+            }
+            String dialectType = interceptorContext.getFromExtraContextInfo(DIALECT_KEY)
+            def databaseType = sqlParseDbTypeMap().get(dialectType)
+            if(databaseType!=null){
+                Validation validation = new Validation(Collections.singletonList(databaseType), sql)
+                List<ValidationError> errors = validation.validate()
+                assert errors.size() == 0
+            }else{
+                println "dialectType:"+dialectType+" ignored for sql parse validation"
+            }
+        }
+
     }
 }

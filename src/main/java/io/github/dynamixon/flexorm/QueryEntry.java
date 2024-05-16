@@ -236,7 +236,6 @@ public class QueryEntry {
             boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
             PagingInjector.dropResult();
             Class<?> resultClass = ExtraParamInjector.getResultClass();
-            List<String> groupByColumns = ExtraParamInjector.getGroupByColumns();
             QueryConditionBundle qryCondition = new QueryConditionBundle.Builder()
                 .tableClass(clazz)
                 .resultClass(resultClass==null?clazz:resultClass)
@@ -246,11 +245,11 @@ public class QueryEntry {
                 .selectColumns(ExtraParamInjector.getSelectColumns())
                 .tableAliasForJoin(ExtraParamInjector.getMainTableAlias())
                 .joins(ExtraParamInjector.getJoins())
-                .groupByColumns(groupByColumns)
+                .groupByColumns(ExtraParamInjector.getGroupByColumns())
                 .havingConds(ExtraParamInjector.getHavingConds())
                 .offset(PagingInjector.getOffset())
                 .limit(PagingInjector.getLimit())
-                .orderByConds(PagingInjector.getOrderConds())
+                .orderConds(PagingInjector.getOrderConds())
                 .build();
             rtList = genericQry(qryCondition);
             rtList = coreRunner.getOfflinePagination().paginate(rtList, qryCondition.getOffset(), qryCondition.getLimit());
@@ -259,29 +258,30 @@ public class QueryEntry {
                 if(interceptorSpan){
                     ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 }
-                if(CollectionUtils.isNotEmpty(groupByColumns)){
-                    qryCondition.setOffset(null);
-                    qryCondition.setLimit(null);
-                    qryCondition.setOrderConds(null);
-                    SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
-                    PagingInjector.setCount(coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues()));
-                }else {
-                    QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
-                        .targetTable(qryCondition.getTargetTable())
-                        .onlyCount(true)
-                        .tableClass(qryCondition.getTableClass())
-                        .tableAliasForJoin(qryCondition.getTableAliasForJoin())
-                        .joins(qryCondition.getJoinInstructions())
-                        .resultClass(CountInfo.class)
-                        .conditionAndList(qryCondition.getConditionAndList())
-                        .conditionOrList(qryCondition.getConditionOrList())
-                        .build();
-                    List<CountInfo> counts = genericQry(qcCount);
-                    PagingInjector.setCount(counts.get(0).getCount());
-                }
+//                if(CollectionUtils.isNotEmpty(groupByColumns)){
+//                    qryCondition.setOffset(null);
+//                    qryCondition.setLimit(null);
+//                    qryCondition.setOrderConds(null);
+//                    SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
+//                    PagingInjector.setCount(coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues()));
+//                }else {
+//                    QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
+//                        .targetTable(qryCondition.getTargetTable())
+//                        .onlyCount(true)
+//                        .tableClass(qryCondition.getTableClass())
+//                        .tableAliasForJoin(qryCondition.getTableAliasForJoin())
+//                        .joins(qryCondition.getJoins())
+//                        .resultClass(CountInfo.class)
+//                        .conditionAndList(qryCondition.getConditionAndList())
+//                        .conditionOrList(qryCondition.getConditionOrList())
+//                        .build();
+//                    List<CountInfo> counts = genericQry(qcCount);
+//                    PagingInjector.setCount(counts.get(0).getCount());
+//                }
+                PagingInjector.setCount(countInner(table,conds,clazz,false));
             }
         } finally {
-            ExtraParamInjector.unSetForQuery();
+            ExtraParamInjector.unsetForQuery();
         }
         return rtList;
     }
@@ -652,27 +652,48 @@ public class QueryEntry {
         return exist(obj.getClass(), this::fromTableDomain, obj);
     }
 
-    public int count(String table, List<Cond> conds) {
-        int count;
-        try {
-            QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
-                .targetTable(table)
-                .onlyCount(true)
-                .resultClass(CountInfo.class)
-                .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
-                .conditionOrList(ExtraParamInjector.getExtraOrConds())
-                .build();
-            List<CountInfo> counts = genericQry(qcCount);
-            count = counts.get(0).getCount();
-        } finally {
-            ExtraParamInjector.unsetExtraConds();
-            ExtraParamInjector.unsetExtraOrConds();
+    private int countInner(String table, List<Cond> conds, Class<?> clazz, boolean includePagingCondition){
+        List<String> groupByColumns = ExtraParamInjector.getGroupByColumns();
+        QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
+            .targetTable(table)
+            .tableClass(clazz)
+            .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
+            .conditionOrList(ExtraParamInjector.getExtraOrConds())
+            .selectColumns(ExtraParamInjector.getSelectColumns())
+            .tableAliasForJoin(ExtraParamInjector.getMainTableAlias())
+            .joins(ExtraParamInjector.getJoins())
+            .groupByColumns(groupByColumns)
+            .havingConds(ExtraParamInjector.getHavingConds())
+            .build();
+        if(includePagingCondition){
+            qcCount.setOffset(PagingInjector.getOffset());
+            qcCount.setLimit(PagingInjector.getLimit());
         }
-        return count;
+        if(CollectionUtils.isNotEmpty(groupByColumns)){
+            SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qcCount);
+            return coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues());
+        }else {
+            qcCount.setOnlyCount(true);
+            qcCount.setResultClass(CountInfo.class);
+            List<CountInfo> counts = genericQry(qcCount);
+            return counts.get(0).getCount();
+        }
+    }
+
+    public int count(String table, List<Cond> conds, Class<?> clazz) {
+        try {
+            return countInner(table,conds,clazz,true);
+        } finally {
+            ExtraParamInjector.unsetForQuery();
+        }
+    }
+
+    public int count(String table, List<Cond> conds) {
+        return count(table,conds,null);
     }
 
     public int count(Class<?> clazz, List<Cond> conds) {
-        return count(TableLoc.findTableName(clazz,getDataSource()),conds);
+        return count(TableLoc.findTableName(clazz,getDataSource()),conds,clazz);
     }
 
     public <E> int count(Class<?> clazz, CondCrafter<E> condCrafter, E primalCond) {

@@ -220,12 +220,21 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.JOINS);
     }
 
-    public static void unSetForQuery(){
-        PagingInjector.unSet();
+    public static void unsetForQuery(){
+        PagingInjector.unset();
         GeneralThreadLocal.unset(DzConst.SELECT_COLUMNS);
         GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
         GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.RESULT_CLASS);
+        GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
+        GeneralThreadLocal.unset(DzConst.JOINS);
+        unsetExtraConds();
+        unsetExtraOrConds();
+    }
+
+    public static void unsetForCount(){
+        GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
+        GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
         GeneralThreadLocal.unset(DzConst.JOINS);
         unsetExtraConds();
