@@ -36,9 +36,9 @@ class pagingTest implements LogicTestBase{
             sqlValues.add(new Tuple2(sql,values))
         }
 
-        DelegatedResultGenerator delegatedResultGenerator = new DelegatedResultGenerator() {
+        DelegatedResultGenerator<List<?>> delegatedResultGenerator = new DelegatedResultGenerator<List<?>>() {
             @Override
-            Object generate(InterceptorContext context) {
+            List<?> generate(InterceptorContext context) {
                 def sql = context.sql
                 if(sql.contains('count(*) as count')){
                     return [new CountInfo(count: 1)]

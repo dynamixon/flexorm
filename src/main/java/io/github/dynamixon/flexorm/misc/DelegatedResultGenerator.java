@@ -1,7 +1,7 @@
 package io.github.dynamixon.flexorm.misc;
 
 @FunctionalInterface
-public interface DelegatedResultGenerator {
+public interface DelegatedResultGenerator<T> {
 
-    Object generate(InterceptorContext context);
+    T generate(InterceptorContext context);
 }

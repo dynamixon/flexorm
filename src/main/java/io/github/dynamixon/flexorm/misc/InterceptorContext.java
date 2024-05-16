@@ -81,7 +81,7 @@ public class InterceptorContext {
             return null;
         }
         if(delegatedResult instanceof DelegatedResultGenerator){
-            return (T)((DelegatedResultGenerator) delegatedResult).generate(this);
+            return ((DelegatedResultGenerator<T>) delegatedResult).generate(this);
         }
         return (T) delegatedResult;
     }
