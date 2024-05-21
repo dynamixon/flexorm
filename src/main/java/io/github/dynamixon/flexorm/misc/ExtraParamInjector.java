@@ -18,6 +18,13 @@ public class ExtraParamInjector {
 
     public static final ParamPrep paramPrep = new ParamPrep();
 
+    public static void turnOffLogging(){
+        GeneralThreadLocal.set(DzConst.IGNORE_LOG, true);
+    }
+    public static void turnOnLogging(){
+        GeneralThreadLocal.unset(DzConst.IGNORE_LOG);
+    }
+
     public static ParamPrep paging(Integer pageNo, Integer pageSize, boolean needCount, OrderCond... orderConds){
         PagingInjector.fillParam(pageNo,pageSize,needCount,orderConds);
         return paramPrep;
@@ -226,15 +233,6 @@ public class ExtraParamInjector {
         GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
         GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.RESULT_CLASS);
-        GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
-        GeneralThreadLocal.unset(DzConst.JOINS);
-        unsetExtraConds();
-        unsetExtraOrConds();
-    }
-
-    public static void unsetForCount(){
-        GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
-        GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN);
         GeneralThreadLocal.unset(DzConst.JOINS);
         unsetExtraConds();

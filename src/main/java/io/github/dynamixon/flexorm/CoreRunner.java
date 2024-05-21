@@ -452,10 +452,11 @@ public class CoreRunner {
             StringBuilder conciseInfo = new StringBuilder();
             if (stack != null) {
                 List<String> logStackPackages = config.getLogStackPackages();
+                boolean logStackPackagesNotEmpty = CollectionUtils.isNotEmpty(logStackPackages);
                 List<StackTraceElement> elements = new ArrayList<>(Arrays.asList(stack));
                 for (StackTraceElement element : elements) {
                     String className = element.getClassName();
-                    if (CollectionUtils.isNotEmpty(logStackPackages)) {
+                    if (logStackPackagesNotEmpty) {
                         boolean match = logStackPackages.stream().anyMatch(p -> StringUtils.trimToEmpty(className).startsWith(p));
                         if (!match) {
                             continue;
