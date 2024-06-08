@@ -6,6 +6,7 @@ public class QueryConditionBundle extends ConditionBundle {
     private Class<?> tableClass;
     private Class<?> resultClass;
     private List<String> selectColumns;
+    private List<String> excludedColumns;
     private boolean onlyCount;
     private String tableAliasForJoin;
     private List<Join> joins;
@@ -25,6 +26,7 @@ public class QueryConditionBundle extends ConditionBundle {
         setTableClass(builder.tableClass);
         setResultClass(builder.resultClass);
         setSelectColumns(builder.selectColumns);
+        setExcludedColumns(builder.excludedColumns);
         setOnlyCount(builder.onlyCount);
         setTableAliasForJoin(builder.tableAliasForJoin);
         setJoins(builder.joins);
@@ -57,6 +59,14 @@ public class QueryConditionBundle extends ConditionBundle {
 
     public void setSelectColumns(List<String> selectColumns) {
         this.selectColumns = selectColumns;
+    }
+
+    public List<String> getExcludedColumns() {
+        return excludedColumns;
+    }
+
+    public void setExcludedColumns(List<String> excludedColumns) {
+        this.excludedColumns = excludedColumns;
     }
 
     public boolean isOnlyCount() {
@@ -130,6 +140,7 @@ public class QueryConditionBundle extends ConditionBundle {
         private Class<?> tableClass;
         private Class<?> resultClass;
         private List<String> selectColumns;
+        private List<String> excludedColumns;
         private boolean onlyCount;
         private String tableAliasForJoin;
         private List<Join> joins;
@@ -169,6 +180,11 @@ public class QueryConditionBundle extends ConditionBundle {
 
         public Builder selectColumns(List<String> val) {
             selectColumns = val;
+            return this;
+        }
+
+        public Builder excludedColumns(List<String> val) {
+            excludedColumns = val;
             return this;
         }
 

@@ -66,6 +66,13 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
+    public static ParamPrep excludeColumns(String ... excludedColumns){
+        if(excludedColumns!=null&&excludedColumns.length>0){
+            GeneralThreadLocal.set(DzConst.EXCLUDE_COLUMNS, Arrays.asList(excludedColumns));
+        }
+        return paramPrep;
+    }
+
     public static ParamPrep sqlId(String sqlId){
         if(StringUtils.isNotBlank(sqlId)){
             GeneralThreadLocal.set(DzConst.SQL_ID, sqlId);
@@ -177,6 +184,10 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.SELECT_COLUMNS);
     }
 
+    public static List<String> getExcludedColumns(){
+        return GeneralThreadLocal.get(DzConst.EXCLUDE_COLUMNS);
+    }
+
     public static List<String> getGroupByColumns(){
         return GeneralThreadLocal.get(DzConst.GROUP_BY_COLUMNS);
     }
@@ -230,6 +241,7 @@ public class ExtraParamInjector {
     public static void unsetForQuery(){
         PagingInjector.unset();
         GeneralThreadLocal.unset(DzConst.SELECT_COLUMNS);
+        GeneralThreadLocal.unset(DzConst.EXCLUDE_COLUMNS);
         GeneralThreadLocal.unset(DzConst.GROUP_BY_COLUMNS);
         GeneralThreadLocal.unset(DzConst.HAVING_CONDS);
         GeneralThreadLocal.unset(DzConst.RESULT_CLASS);

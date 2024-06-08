@@ -273,13 +273,37 @@ public class SqlBuilder {
         return condListForJoin;
     }
 
+    private List<String> finalSelectColumns(QueryConditionBundle qc){
+        List<String> finalSelectColumns;
+        List<String> selectColumns = qc.getSelectColumns();
+        List<String> excludedColumns = qc.getExcludedColumns();
+        if(CollectionUtils.isEmpty(excludedColumns)){
+            return selectColumns;
+        }
+        if(CollectionUtils.isNotEmpty(selectColumns)){
+            finalSelectColumns = new ArrayList<>(selectColumns);
+            finalSelectColumns.removeIf(excludedColumns::contains);
+            return finalSelectColumns;
+        }
+        Class<?> tableClass = qc.getTableClass();
+        TableObjectMetaCache.initTableObjectMeta(tableClass,coreRunner);
+        Map<String, String> columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(tableClass,coreRunner.getDataSource());
+        Set<String> columnsNames = columnToFieldMap.keySet();
+        finalSelectColumns = new ArrayList<>(columnsNames);
+        finalSelectColumns.removeIf(excludedColumns::contains);
+        if(CollectionUtils.isEmpty(finalSelectColumns)){
+            throw new IllegalArgumentException("At least one column is needed for select, Columns excluded:"+excludedColumns+", tableClass:"+tableClass);
+        }
+        return finalSelectColumns;
+    }
+
     public SqlPreparedBundle composeSelect(QueryConditionBundle qc) {
         resolveColumnNameFromFieldInfoGetter(qc);
         SqlPreparedBundle sp = new SqlPreparedBundle();
         StringBuilder where = new StringBuilder(" where 1=1 ");
         List<Object> values = new ArrayList<>();
         StringBuilder select = new StringBuilder("select");
-        List<String> selectColumns = qc.getSelectColumns();
+        List<String> selectColumns = finalSelectColumns(qc);
         String mainTableAliasForJoin = determineTableAliasForJoin(qc);
         boolean requireJoin = StringUtils.isNotBlank(mainTableAliasForJoin) && CollectionUtils.isNotEmpty(qc.getJoins());
         if (qc.isOnlyCount()) {

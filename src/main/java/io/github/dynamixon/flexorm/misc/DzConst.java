@@ -24,6 +24,11 @@ public interface DzConst {
     String SELECT_COLUMNS = PREFIX+"selectColumns";
 
     /**
+     * GeneralThreadLocal key to specify which columns to be excluded from a query
+     */
+    String EXCLUDE_COLUMNS = PREFIX+"excludeColumns";
+
+    /**
      * GeneralThreadLocal key to denote a sql statement
      */
     String SQL_ID = PREFIX+"sqlId";
