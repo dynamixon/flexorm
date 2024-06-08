@@ -183,6 +183,7 @@ class CommonTest {
                     querySingleAndExist()
                     findOneValueTest()
                     selectColumnsTest()
+                    excludeColumnsTest()
                     orderTest()
                     pagingTest()
                     paging4Map()
@@ -541,6 +542,37 @@ class CommonTest {
                 assert it.value==null
             }
         }
+    }
+
+    void excludeColumnsTest(){
+        logger.info ' -- excludeColumnsTest -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def record = list.get(0)
+        def search = getCurrentClass().newInstance()
+        def id = MiscUtil.extractFieldValueFromObj(record,"id")
+        MiscUtil.setValue(search,"id",id)
+        try {
+            qe.prep(
+                    sqlId(verboseSqlId("excludeColumnsTest step1")),
+                    selectColumns("id"),
+                    excludeColumns('id')
+            ).searchObject(search)
+            assert false
+        } catch (e) {
+            assert e.getMessage().contains('At least one column is needed for select')
+        }
+        def resultRecord = qe.prep(
+                sqlId(verboseSqlId("excludeColumnsTest step2")),
+                selectColumns('id','some_col'),
+                excludeColumns('some_col')
+        ).searchObject(search)
+        assert resultRecord !=null
+        resultRecord = qe.prep(
+                sqlId(verboseSqlId("excludeColumnsTest step3")),
+                excludeColumns('id')
+        ).searchObject(search)
+        assert resultRecord.getId() == null
+
     }
 
     void orderTest(){
