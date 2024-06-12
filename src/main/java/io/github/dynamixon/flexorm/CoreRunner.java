@@ -11,7 +11,9 @@ import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
 import io.github.dynamixon.flexorm.misc.*;
-import io.github.dynamixon.flexorm.pojo.*;
+import io.github.dynamixon.flexorm.pojo.Config;
+import io.github.dynamixon.flexorm.pojo.CountInfo;
+import io.github.dynamixon.flexorm.pojo.SqlValuePart;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.BasicRowProcessor;
 import org.apache.commons.dbutils.QueryRunner;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CoreRunner {
     private static final Logger logger = LoggerFactory.getLogger(CoreRunner.class);
@@ -225,6 +228,31 @@ public class CoreRunner {
         return affected;
     }
 
+    public int[] genericBatchUpdate(String sql, Object[][] values) {
+        int[] affected;
+        InterceptorContext interceptorContext = null;
+        try {
+            interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
+            sql = getIdSql(interceptorContext.getSql());
+            long start = System.currentTimeMillis();
+            if(interceptorContext.isResultDelegate()){
+                affected = interceptorContext.getGenericDelegateResult();
+            }else {
+                affected = queryRunner.batch(sql, (Object[][])interceptorContext.getValues());
+                interceptorContext.setRealResult(affected);
+            }
+            long end = System.currentTimeMillis();
+            long timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+            log(sql, interceptorContext, Arrays.stream(affected).boxed().collect(Collectors.toList()), "BATCH-AFFECTED", timeCost);
+        } catch (SQLException e) {
+            throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+        }
+        return affected;
+    }
+
     private SqlValuePart composeInsertSqlValuePart(String table, Map<String, Object> valueMap){
         StringBuilder sql = new StringBuilder("insert into " + table + " (");
         StringBuilder valueSql = new StringBuilder(" values( ");
@@ -345,7 +373,7 @@ public class CoreRunner {
             String delegateFlag = resultDelegate?"[DELEGATED]":"";
             String log = delegateFlag+"===> SQL: " + sql;
             if (values != null) {
-                log += "  VALUES: " + new ArrayList<>(Arrays.asList(values));
+                log += "  VALUES: " + Arrays.deepToString(values);
             }
             if (output != null) {
                 if ("RESULT-SIZE".equalsIgnoreCase(outputDenote)) {
