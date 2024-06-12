@@ -12,6 +12,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -184,13 +185,7 @@ public class QueryEntry {
             }
             return coreRunner.genericUpdate(sqlPreparedBundle.getSql(), sqlPreparedBundle.getValues());
         } finally {
-            ExtraParamInjector.unsetExtraConds();
-            ExtraParamInjector.unsetExtraOrConds();
-            ExtraParamInjector.unsetEmptyUpdateCondRestriction();
-
-            ExtraParamInjector.unsetSqlId();
-            ExtraParamInjector.unsetInterceptor();
-            ExtraParamInjector.unsetInterceptorChainMode();
+            ExtraParamInjector.unsetForDel();
         }
     }
 
@@ -512,120 +507,148 @@ public class QueryEntry {
             }
             return coreRunner.genericUpdate(sqlPreparedBundle.getSql(), sqlPreparedBundle.getValues());
         } finally {
-            ExtraParamInjector.unsetExtraConds();
-            ExtraParamInjector.unsetExtraOrConds();
-            ExtraParamInjector.unsetExtraColumnValuePairs4Update();
-            ExtraParamInjector.unsetEmptyUpdateCondRestriction();
-            ExtraParamInjector.unsetIgnoreColumnsFromCondForUpdate();
-
-            ExtraParamInjector.unsetSqlId();
-            ExtraParamInjector.unsetInterceptor();
-            ExtraParamInjector.unsetInterceptorChainMode();
+            ExtraParamInjector.unsetForUpdate();
         }
     }
 
-    public int[] batchUpdate(String table, List<Pair<Map<String, Object>, List<Cond>>> updateValueMapAndConds) {
-        if(CollectionUtils.isEmpty(updateValueMapAndConds)){
-            updateValueMapAndConds = new ArrayList<>();
-        }
-        Map<String,List<SqlPreparedBundle>> sqlPreparedBundleMap = new LinkedHashMap<>();
-        int size = updateValueMapAndConds.size();
-        // for each item in LinkedHashMap:sqlPreparedBundleMap, the key is the index to which the sql corresponds, the value is the sql.
-        Map<Integer,String> posSqlMap = new HashMap<>();
-        // for each item of updateValueMapAndConds, the key is the item index, the value is the sql built from the item.
-        Map<Integer,String> idxSqlMap = new HashMap<>();
-        // for each item of updateValueMapAndConds, the key is the item index, the value is the index of sqlPreparedBundle from List<SqlPreparedBundle> which grouped by sql .
-        Map<Integer, Integer> innerPosMap = new HashMap<>();
-        // the key is the index based on the return value of batchUpdate, the value is the index corresponds to the item of updateValueMapAndConds.
-        Map<Integer, Integer> resultPosMap = new HashMap<>();
-        for (int i = 0; i < size; i++){
-            Pair<Map<String, Object>, List<Cond>> pair = updateValueMapAndConds.get(i);
-            Map<String, Object> updateValueMap = pair.getLeft();
-            List<Cond> conds = pair.getRight();
-            List<ColumnValuePair4Update> columnValuepairs = toFullColumnValuePair(updateValueMap);
-            if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
-                if(CollectionUtils.isNotEmpty(conds)){
-                    List<String> colNames = conds.stream().map(Cond::getColumnName).collect(Collectors.toList());
-                    columnValuepairs.removeIf(columnValuePair4Update -> colNames.contains(columnValuePair4Update.getColumn()));
+    public int[] batchUpdate(List<Triple<String,Map<String, Object>, List<Cond>>> batchUpdateTriples) {
+        try {
+            if(CollectionUtils.isEmpty(batchUpdateTriples)){
+                return new int[]{-1};
+            }
+            SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
+            SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
+            Map<String,List<SqlPreparedBundle>> sqlPreparedBundleMap = new LinkedHashMap<>();
+            int size = batchUpdateTriples.size();
+            // for each item in LinkedHashMap:sqlPreparedBundleMap, the key is the index to which the sql corresponds, the value is the sql.
+            Map<Integer,String> posSqlMap = new HashMap<>();
+            // for each item of updateValueMapAndConds, the key is the item index, the value is the sql built from the item.
+            Map<Integer,String> idxSqlMap = new HashMap<>();
+            // for each item of updateValueMapAndConds, the key is the item index, the value is the index of sqlPreparedBundle from List<SqlPreparedBundle> which grouped by sql .
+            Map<Integer, Integer> innerPosMap = new HashMap<>();
+            // the key is the index based on the return value of batchUpdate, the value is the index corresponds to the item of updateValueMapAndConds.
+            Map<Integer, Integer> resultPosMap = new HashMap<>();
+            for (int i = 0; i < size; i++){
+                Triple<String,Map<String, Object>, List<Cond>> triple = batchUpdateTriples.get(i);
+                String table = triple.getLeft();
+                Map<String, Object> updateValueMap = triple.getMiddle();
+                List<Cond> conds = triple.getRight();
+                List<ColumnValuePair4Update> columnValuepairs = toFullColumnValuePair(updateValueMap);
+                if(ExtraParamInjector.columnsFromCondIgnoredForUpdate()){
+                    if(CollectionUtils.isNotEmpty(conds)){
+                        List<String> colNames = conds.stream().map(Cond::getColumnName).collect(Collectors.toList());
+                        columnValuepairs.removeIf(columnValuePair4Update -> colNames.contains(columnValuePair4Update.getColumn()));
+                    }
                 }
+                UpdateConditionBundle upCond = new UpdateConditionBundle.Builder()
+                        .targetTable(table)
+                        .values2Update(MiscUtil.combineList(columnValuepairs,ExtraParamInjector.getExtraColumnValuePairs4Update()))
+                        .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
+                        .conditionOrList(ExtraParamInjector.getExtraOrConds())
+                        .build();
+                if(CollectionUtils.isEmpty(upCond.getValues2Update())){
+                    throw new IllegalArgumentException("There are no values to be updated, table="+table);
+                }
+                SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
+                String sql = sqlPreparedBundle.getSql();
+                if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
+                    throw new IllegalArgumentException("Update without condition! sql:"+ sql +", This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
+                }
+                idxSqlMap.put(i,sql);
+                List<SqlPreparedBundle> sqlPreparedBundles = sqlPreparedBundleMap.get(sql);
+                if(sqlPreparedBundles==null){
+                    sqlPreparedBundles = new ArrayList<>();
+                    sqlPreparedBundles.add(sqlPreparedBundle);
+                    sqlPreparedBundleMap.put(sql,sqlPreparedBundles);
+                    posSqlMap.put(posSqlMap.size(),sql);
+                }else {
+                    sqlPreparedBundles.add(sqlPreparedBundle);
+                }
+                innerPosMap.put(i,sqlPreparedBundles.size()-1);
             }
-            UpdateConditionBundle upCond = new UpdateConditionBundle.Builder()
-                    .targetTable(table)
-                    .values2Update(MiscUtil.combineList(columnValuepairs,ExtraParamInjector.getExtraColumnValuePairs4Update()))
-                    .conditionAndList(combineConds(conds, ExtraParamInjector.getExtraConds()))
-                    .conditionOrList(ExtraParamInjector.getExtraOrConds())
-                    .build();
-            if(CollectionUtils.isEmpty(upCond.getValues2Update())){
-                throw new IllegalArgumentException("There are no values to be updated, table="+table);
+            Map<String,Integer> sqlStartIdxMap = new HashMap<>();
+            AtomicInteger posCur = new AtomicInteger(0);
+            posSqlMap.keySet().stream().sorted().forEach(pos->{
+                String sql = posSqlMap.get(pos);
+                int bundleSize = sqlPreparedBundleMap.get(sql).size();
+                int idx = posCur.get() + bundleSize - 1;
+                sqlStartIdxMap.put(sql, idx);
+                posCur.set(idx+1);
+            });
+            for (int i = 0; i < size; i++){
+                String sql = idxSqlMap.get(i);
+                Integer sqlStartIdx = sqlStartIdxMap.get(sql);
+                Integer innerIdx = innerPosMap.get(i);
+                resultPosMap.put((sqlStartIdx+innerIdx),i);
             }
-            SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeUpdate(upCond);
-            String sql = sqlPreparedBundle.getSql();
-            if(!sqlPreparedBundle.isWithCondition()&&!ExtraParamInjector.emptyUpdateCondAllowed()){
-                throw new IllegalArgumentException("Update without condition! sql:"+ sql +", This restriction can be suppressed by ExtraParamInjector.allowEmptyUpdateCond()");
+            List<Integer> batchEffected = new ArrayList<>();
+            sqlPreparedBundleMap.forEach((sql, sqlPreparedBundles)-> {
+                ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
+                Object[][] batchValues = toBatchValues(sqlPreparedBundles);
+                int[] nums = coreRunner.genericBatchUpdate(sql, batchValues);
+                batchEffected.addAll(Arrays.stream(nums).boxed().collect(Collectors.toList()));
+                });
+            int[] rt = new int[size];
+            for (int i = 0; i < size; i++){
+                rt[i] = batchEffected.get(resultPosMap.get(i));
             }
-            idxSqlMap.put(i,sql);
-            List<SqlPreparedBundle> sqlPreparedBundles = sqlPreparedBundleMap.get(sql);
-            if(sqlPreparedBundles==null){
-                sqlPreparedBundles = new ArrayList<>();
-                sqlPreparedBundles.add(sqlPreparedBundle);
-                sqlPreparedBundleMap.put(sql,sqlPreparedBundles);
-                posSqlMap.put(posSqlMap.size(),sql);
-            }else {
-                sqlPreparedBundles.add(sqlPreparedBundle);
-            }
-            innerPosMap.put(i,sqlPreparedBundles.size()-1);
+            return rt;
+        } finally {
+            ExtraParamInjector.unsetForUpdate();
         }
-        Map<String,Integer> sqlStartIdxMap = new HashMap<>();
-        AtomicInteger posCur = new AtomicInteger(0);
-        posSqlMap.keySet().stream().sorted().forEach(pos->{
-            String sql = posSqlMap.get(pos);
-            int bundleSize = sqlPreparedBundleMap.get(sql).size();
-            int idx = posCur.get() + bundleSize - 1;
-            sqlStartIdxMap.put(sql, idx);
-            posCur.set(idx+1);
-        });
-        for (int i = 0; i < size; i++){
-            String sql = idxSqlMap.get(i);
-            Integer sqlStartIdx = sqlStartIdxMap.get(sql);
-            Integer innerIdx = innerPosMap.get(i);
-            resultPosMap.put((sqlStartIdx+innerIdx),i);
-        }
-        List<Integer> batchEffected = new ArrayList<>();
-        sqlPreparedBundleMap.forEach((sql, sqlPreparedBundles)-> {
-            Object[][] batchValues = toBatchValues(sqlPreparedBundles);
-            int[] nums = coreRunner.genericBatchUpdate(sql, batchValues);
-            batchEffected.addAll(Arrays.stream(nums).boxed().collect(Collectors.toList()));
-        });
-        int[] rt = new int[size];
-        for (int i = 0; i < size; i++){
-            rt[i] = batchEffected.get(resultPosMap.get(i));
-        }
-        return rt;
     }
 
     public int updateSelective(String table, Object record, List<Cond> conds) {
         return update(table, toColumnValueMap(record), conds);
     }
 
-    public int[] batchUpdateSelective(String table, List<Pair<Object, List<Cond>>> recordCondsPairs) {
-        if(CollectionUtils.isEmpty(recordCondsPairs)){
-            throw new IllegalArgumentException("recordCondsPairs is empty, table="+table);
+    public int[] batchUpdateSelectiveByTable(List<Triple<String,Object,List<Cond>>> tableRecordCondsTriples) {
+        if(CollectionUtils.isEmpty(tableRecordCondsTriples)){
+            return new int[]{-1};
         }
-        List<Pair<Map<String, Object>, List<Cond>>> updateValueMapAndConds = new ArrayList<>();
-        recordCondsPairs.forEach(pair-> updateValueMapAndConds.add(Pair.of(toColumnValueMap(pair.getLeft()), pair.getRight())));
-        return batchUpdate(table, updateValueMapAndConds);
+        return batchUpdate(tableRecordCondsTriples.stream()
+                        .map(triple -> Triple.of(triple.getLeft(),toColumnValueMap(triple.getMiddle()), triple.getRight()))
+                        .collect(Collectors.toList()));
     }
 
     public int updateSelective(Object record, List<Cond> conds) {
         return updateSelective(TableLoc.findTableName(record.getClass(),getDataSource()), record, conds);
     }
 
+    public int[] batchUpdateSelectiveByRecord(List<Pair<Object,List<Cond>>> recordCondsPairs){
+        if(CollectionUtils.isEmpty(recordCondsPairs)){
+            return new int[]{-1};
+        }
+        return batchUpdateSelectiveByTable(recordCondsPairs.stream()
+                .map(pair -> Triple.of(TableLoc.findTableName(pair.getLeft().getClass(),getDataSource()),pair.getLeft(), pair.getRight()))
+                .collect(Collectors.toList()));
+    }
+
     public <E> int updateSelective(Object record, CondCrafter<E> condCrafter, E primalCond) {
         return updateSelective(record, condCrafter.craft(primalCond));
     }
 
+    public <E> int[] batchUpdateSelectiveWithCondCrafter(List<Triple<Object,CondCrafter<E>,E>> recordCondCrafterPrimalCondTriples){
+        if(CollectionUtils.isEmpty(recordCondCrafterPrimalCondTriples)){
+            return new int[]{-1};
+        }
+        return batchUpdateSelectiveByRecord(recordCondCrafterPrimalCondTriples.stream()
+                .map(triple -> Pair.of(triple.getLeft(),triple.getMiddle().craft(triple.getRight())))
+                .collect(Collectors.toList()));
+    }
+
     public int updateSelective(Object record, Cond... conds) {
         return updateSelective(record, Arrays::asList, conds);
+    }
+
+    @SafeVarargs
+    public final int[] batchUpdateSelectiveVarargs(Pair<Object, List<Cond>>... recordCondsPairs){
+        return batchUpdateSelectiveByRecord(Arrays.asList(recordCondsPairs));
+    }
+
+    @SafeVarargs
+    public final int[] batchUpdateSelectiveVarargs(Triple<String,Object,List<Cond>>... tableRecordCondsTriples){
+        return batchUpdateSelectiveByTable(Arrays.asList(tableRecordCondsTriples));
     }
 
     public int updateSelectiveConcise(Object record, String... fieldsOrColumns) {
@@ -633,12 +656,43 @@ public class QueryEntry {
         return updateSelective(record, initCondsByFields(record, fieldsOrColumns));
     }
 
+    public int[] batchUpdateSelectiveConcise(List<Object> records, String... fieldsOrColumns){
+        ExtraParamInjector.ignoreColumnsFromCondForUpdate();
+        return batchUpdateSelectiveByRecord(records.stream()
+                .map(record -> Pair.of(record,initCondsByFields(record, fieldsOrColumns)))
+                .collect(Collectors.toList()));
+    }
+
     public <T> int updateSelectiveAutoCond(T record, T condObj) {
         return updateSelective(record, this::fromTableDomain, condObj);
     }
 
+    public int[] batchUpdateSelectiveAutoCond(List<Pair<Object,Object>> recordCondObjPairs){
+        if(CollectionUtils.isEmpty(recordCondObjPairs)){
+            return new int[]{-1};
+        }
+        return batchUpdateSelectiveByRecord(recordCondObjPairs.stream()
+                .map(pair -> Pair.of(pair.getLeft(),fromTableDomain(pair.getRight())))
+                .collect(Collectors.toList()));
+    }
+
+    @SafeVarargs
+    public final int[] batchUpdateSelectiveAutoCondVarargs(Pair<Object, Object>... recordCondObjPairs){
+        return batchUpdateSelectiveAutoCond(Arrays.asList(recordCondObjPairs));
+    }
+
     public int updateSelectiveByPrimary(Object record){
         return update(TableLoc.findTableName(record.getClass(),getDataSource()), toColumnValueMap(record,false),getPrimaryConds(record));
+    }
+
+    public int[] batchUpdateSelectiveByPrimary(List<Object> records){
+        return batchUpdate(records.stream()
+                .map(record -> Triple.of(TableLoc.findTableName(record.getClass(),getDataSource()),toColumnValueMap(record,false),getPrimaryConds(record)))
+                .collect(Collectors.toList()));
+    }
+
+    public int[] batchUpdateSelectiveByPrimaryVarargs(Object ... records){
+        return batchUpdateSelectiveByPrimary(Arrays.asList(records));
     }
 
     public int persist(Object record, List<Cond> conds) {
@@ -693,18 +747,27 @@ public class QueryEntry {
     }
 
     public int updateFull(String table, Object record, List<Cond> conds, List<String> excludeColumns, boolean includePrimary) {
-        Map<String, Object> map = toFullColumnValueMap(record,includePrimary);
-        if (CollectionUtils.isNotEmpty(excludeColumns)) {
-            List<String> lowercaseColNames = excludeColumns.stream().map(String::toLowerCase).collect(Collectors.toList());
-            List<String> keys2Remove = new ArrayList<>();
-            map.forEach((key, value) -> {
-                if (lowercaseColNames.contains(key.toLowerCase())) {
-                    keys2Remove.add(key);
-                }
-            });
-            keys2Remove.forEach(map::remove);
-        }
+        Map<String, Object> map = toFullColumnValueMap(record,includePrimary,excludeColumns);
         return update(table, map, conds);
+    }
+
+    public int[] batchUpdateFull(List<Pair<Triple<String,Object,List<Cond>>,Pair<List<String>,Boolean>>> batchUpdateFullComplex){
+        return batchUpdate(batchUpdateFullComplex.stream()
+                .map(complex -> Triple.of(
+                        //table
+                        complex.getLeft().getLeft(),
+                        //updateValueMap
+                        toFullColumnValueMap(
+                                //record
+                                complex.getLeft().getMiddle(),
+                                //includePrimary
+                                complex.getRight().getRight(),
+                                //excludeColumns
+                                complex.getRight().getLeft()
+                        ),
+                        //conds
+                        complex.getLeft().getRight()))
+                .collect(Collectors.toList());
     }
 
     public int updateFull(Object record, List<Cond> conds, String ... excludeColumns) {
@@ -893,6 +956,10 @@ public class QueryEntry {
     }
 
     private Map<String, Object> toFullColumnValueMap(Object obj, boolean includePrimary) {
+        return toFullColumnValueMap(obj,includePrimary,null);
+    }
+
+    private Map<String, Object> toFullColumnValueMap(Object obj, boolean includePrimary,List<String> excludeColumns) {
         Map<String, Object> map = new LinkedHashMap<>();
         try {
             Class<?> tableClass = obj.getClass();
@@ -913,6 +980,16 @@ public class QueryEntry {
                 field.setAccessible(true);
                 Object value = field.get(obj);
                 map.put(fieldToColumnMap.get(fieldName), value);
+            }
+            if (CollectionUtils.isNotEmpty(excludeColumns)) {
+                List<String> lowercaseColNames = excludeColumns.stream().map(String::toLowerCase).collect(Collectors.toList());
+                List<String> keys2Remove = new ArrayList<>();
+                map.forEach((key, value) -> {
+                    if (lowercaseColNames.contains(key.toLowerCase())) {
+                        keys2Remove.add(key);
+                    }
+                });
+                keys2Remove.forEach(map::remove);
             }
         } catch (Exception e) {
             throw new DBException(e);
