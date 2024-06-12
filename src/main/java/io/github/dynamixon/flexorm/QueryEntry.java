@@ -774,6 +774,27 @@ public class QueryEntry {
         return updateFull(TableLoc.findTableName(record.getClass(),getDataSource()), record, conds, Arrays.asList(excludeColumns),true);
     }
 
+    public int[] batchUpdateFullByRecord(List<Triple<Object,List<Cond>,List<String>>> recordCondsExcludeColumnsTriples){
+        if(CollectionUtils.isEmpty(recordCondsExcludeColumnsTriples)){
+            return new int[]{-1};
+        }
+        return batchUpdateFull(recordCondsExcludeColumnsTriples.stream()
+                .map(triple->Pair.of(Triple.of(
+                        //table
+                        TableLoc.findTableName(triple.getLeft().getClass(),getDataSource()),
+                        //record
+                        triple.getLeft(),
+                        //conds
+                        triple.getMiddle()
+                ),Pair.of(
+                        //excludeColumns
+                        triple.getRight(),
+                        //includePrimary
+                        true)
+                ))
+                .collect(Collectors.toList()));
+    }
+
     public <E> int updateFull(Object record, CondCrafter<E> condCrafter, E primalCond, String ... excludeColumns) {
         return updateFull(record, condCrafter.craft(primalCond), excludeColumns);
     }
