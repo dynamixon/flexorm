@@ -767,7 +767,7 @@ public class QueryEntry {
                         ),
                         //conds
                         complex.getLeft().getRight()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     public int updateFull(Object record, List<Cond> conds, String ... excludeColumns) {
