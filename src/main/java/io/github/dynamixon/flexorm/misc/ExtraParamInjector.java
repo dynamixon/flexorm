@@ -251,6 +251,28 @@ public class ExtraParamInjector {
         unsetExtraOrConds();
     }
 
+    public static void unsetForUpdate(){
+        ExtraParamInjector.unsetExtraConds();
+        ExtraParamInjector.unsetExtraOrConds();
+        ExtraParamInjector.unsetExtraColumnValuePairs4Update();
+        ExtraParamInjector.unsetEmptyUpdateCondRestriction();
+        ExtraParamInjector.unsetIgnoreColumnsFromCondForUpdate();
+
+        ExtraParamInjector.unsetSqlId();
+        ExtraParamInjector.unsetInterceptor();
+        ExtraParamInjector.unsetInterceptorChainMode();
+    }
+
+    public static void unsetForDel(){
+        ExtraParamInjector.unsetExtraConds();
+        ExtraParamInjector.unsetExtraOrConds();
+        ExtraParamInjector.unsetEmptyUpdateCondRestriction();
+
+        ExtraParamInjector.unsetSqlId();
+        ExtraParamInjector.unsetInterceptor();
+        ExtraParamInjector.unsetInterceptorChainMode();
+    }
+
     public static void unsetSqlId(){
         GeneralThreadLocal.unset(DzConst.SQL_ID);
     }
