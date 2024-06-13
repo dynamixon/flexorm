@@ -516,6 +516,7 @@ public class QueryEntry {
             if(CollectionUtils.isEmpty(batchUpdateTriples)){
                 return new int[]{-1};
             }
+            String sqlId = ExtraParamInjector.getSqlId();
             SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
             SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
             Map<String,List<SqlPreparedBundle>> sqlPreparedBundleMap = new LinkedHashMap<>();
@@ -583,6 +584,7 @@ public class QueryEntry {
             }
             List<Integer> batchEffected = new ArrayList<>();
             sqlPreparedBundleMap.forEach((sql, sqlPreparedBundles)-> {
+                ExtraParamInjector.sqlId(sqlId);
                 ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 Object[][] batchValues = toBatchValues(sqlPreparedBundles);
                 int[] nums = coreRunner.genericBatchUpdate(sql, batchValues);
@@ -642,12 +644,12 @@ public class QueryEntry {
     }
 
     @SafeVarargs
-    public final int[] batchUpdateSelectiveVarargs(Pair<Object, List<Cond>>... recordCondsPairs){
+    public final int[] batchUpdateSelectiveByRecordVarargs(Pair<Object, List<Cond>>... recordCondsPairs){
         return batchUpdateSelectiveByRecord(Arrays.asList(recordCondsPairs));
     }
 
     @SafeVarargs
-    public final int[] batchUpdateSelectiveVarargs(Triple<String,Object,List<Cond>>... tableRecordCondsTriples){
+    public final int[] batchUpdateSelectiveByTableVarargs(Triple<String,Object,List<Cond>>... tableRecordCondsTriples){
         return batchUpdateSelectiveByTable(Arrays.asList(tableRecordCondsTriples));
     }
 
@@ -656,11 +658,27 @@ public class QueryEntry {
         return updateSelective(record, initCondsByFields(record, fieldsOrColumns));
     }
 
-    public int[] batchUpdateSelectiveConcise(List<Object> records, String... fieldsOrColumns){
+    public int[] batchUpdateSelectiveConcise(List<Pair<Object,List<String>>> recordFieldsOrColumnsPairs){
         ExtraParamInjector.ignoreColumnsFromCondForUpdate();
-        return batchUpdateSelectiveByRecord(records.stream()
-                .map(record -> Pair.of(record,initCondsByFields(record, fieldsOrColumns)))
+        return batchUpdateSelectiveByRecord(recordFieldsOrColumnsPairs.stream()
+                .map(pair -> Pair.of(
+                        // record
+                        pair.getLeft(),
+                        // conds
+                        initCondsByFields(
+                            // record
+                            pair.getLeft(),
+                            // fieldsOrColumns
+                            pair.getRight().toArray(new String[0])
+                        )
+                    )
+                )
                 .collect(Collectors.toList()));
+    }
+
+    @SafeVarargs
+    public final int[] batchUpdateSelectiveConciseVarargs(Pair<Object, List<String>>... recordFieldsOrColumnsPairs){
+        return batchUpdateSelectiveConcise(Arrays.asList(recordFieldsOrColumnsPairs));
     }
 
     public <T> int updateSelectiveAutoCond(T record, T condObj) {

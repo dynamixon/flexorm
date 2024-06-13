@@ -70,6 +70,24 @@ class LogicTester {
         }
     }
 
+    static SqlExecutionInterceptor getDelegatedInterceptorForBatchUpdate(Map<String,Object> sqlDelegatedResultMap, Closure<?> validator,Map<String,Object> extraInfo, boolean spanWithin = true){
+        return new SqlExecutionInterceptor() {
+            @Override
+            boolean spanWithin() {
+                return spanWithin
+            }
+            @Override
+            void beforeExecution(InterceptorContext interceptorContext){
+                interceptorContext.putAllToExtraContextInfo(extraInfo)
+                interceptorContext.setDelegatedResult(sqlDelegatedResultMap.get(interceptorContext.getSql()))
+            }
+            @Override
+            void afterExecution(InterceptorContext interceptorContext){
+                validator.call(interceptorContext)
+            }
+        }
+    }
+
     static SqlExecutionInterceptor getDelegatedInterceptor(Object delegatedResult, Closure<?> validator, boolean spanWithin = true){
         return getDelegatedInterceptor(delegatedResult,validator,[:],spanWithin)
     }
@@ -102,7 +120,7 @@ class LogicTester {
             def sql = interceptorContext.getSql()
             def values = interceptorContext.values
             println "sql="+sql
-            println "values="+values
+            println "values="+Arrays.deepToString(values)
             assert sql == expectedSql
             assert values.size() == expectedValues.size()
             values?.eachWithIndex { value, index ->
@@ -118,6 +136,27 @@ class LogicTester {
                 println "dialectType:"+dialectType+" ignored for sql parse validation"
             }
         }
+    }
 
+    static Closure<?> genValidatorForBatchUpdate(Map<String,Object[][]> expectedSqlValuesMap){
+        return { InterceptorContext interceptorContext ->
+            def sql = interceptorContext.getSql()
+            def values = interceptorContext.values
+            println "sql="+sql
+            println "values="+Arrays.deepToString(values)
+            Object[] expectedValues = expectedSqlValuesMap.get(sql)
+            assert expectedValues!=null
+            assert Arrays.deepToString(values) == Arrays.deepToString(expectedValues)
+            assert Arrays.deepEquals(values,expectedValues)
+            String dialectType = interceptorContext.getFromExtraContextInfo(DIALECT_KEY)
+            def databaseType = sqlParseDbTypeMap().get(dialectType)
+            if(databaseType!=null){
+                Validation validation = new Validation(Collections.singletonList(databaseType), sql)
+                List<ValidationError> errors = validation.validate()
+                assert errors.size() == 0
+            }else{
+                println "dialectType:"+dialectType+" ignored for sql parse validation"
+            }
+        }
     }
 }

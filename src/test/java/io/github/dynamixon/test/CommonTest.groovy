@@ -1445,7 +1445,7 @@ class CommonTest {
         MiscUtil.setValue(record2,nullField,'2')
         def updateNums = qe.prep(
                 sqlId(verboseSqlId("batchUpdateSelective step1")),
-        ).batchUpdateSelectiveVarargs(
+        ).batchUpdateSelectiveByRecordVarargs(
                 Pair.of(record1,[new Cond('id', id2Update1)]),
                 Pair.of(record2,[new Cond('id', id2Update2)])
         )

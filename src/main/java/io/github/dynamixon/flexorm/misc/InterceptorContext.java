@@ -14,7 +14,7 @@ public class InterceptorContext {
     private Object delegatedResult;
     private Object realResult;
     private Long timeCost;
-    private Map<String,Object> extraContextInfo;
+    private volatile Map<String,Object> extraContextInfo;
 
     public InterceptorContext() {
     }
@@ -95,31 +95,33 @@ public class InterceptorContext {
     }
 
     public void putToExtraContextInfo(String key, Object value){
-        synchronized (InterceptorContext.class){
             if(extraContextInfo == null){
-                extraContextInfo = new ConcurrentHashMap<>();
+                synchronized (this){
+                    if(extraContextInfo == null) {
+                        extraContextInfo = new ConcurrentHashMap<>();
+                    }
+                }
             }
             extraContextInfo.put(key, value);
-        }
     }
 
     public void putAllToExtraContextInfo(Map<String, Object> map){
         if(map == null){
             return;
         }
-        synchronized (InterceptorContext.class){
-            if(extraContextInfo == null){
-                extraContextInfo = new ConcurrentHashMap<>();
+        if(extraContextInfo == null){
+            synchronized (this){
+                if(extraContextInfo == null) {
+                    extraContextInfo = new ConcurrentHashMap<>();
+                }
             }
-            extraContextInfo.putAll(map);
         }
+        extraContextInfo.putAll(map);
     }
 
     public <T> T removeFromExtraContextInfo(String key){
-        synchronized (InterceptorContext.class){
-            if(extraContextInfo != null){
-                return (T) extraContextInfo.remove(key);
-            }
+        if(extraContextInfo != null){
+            return (T) extraContextInfo.remove(key);
         }
         return null;
     }
