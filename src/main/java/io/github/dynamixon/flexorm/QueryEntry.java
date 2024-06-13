@@ -571,9 +571,9 @@ public class QueryEntry {
             posSqlMap.keySet().stream().sorted().forEach(pos->{
                 String sql = posSqlMap.get(pos);
                 int bundleSize = sqlPreparedBundleMap.get(sql).size();
-                int idx = posCur.get() + bundleSize - 1;
+                int idx = posCur.get();
                 sqlStartIdxMap.put(sql, idx);
-                posCur.set(idx+1);
+                posCur.set(idx+bundleSize);
             });
             for (int i = 0; i < size; i++){
                 String sql = idxSqlMap.get(i);
@@ -799,12 +799,54 @@ public class QueryEntry {
         return updateFull(record, condCrafter.craft(primalCond), excludeColumns);
     }
 
+    public <E> int[] batchUpdateFullWithCondCrafter(List<Pair<Triple<Object,CondCrafter<E>, E>, List<String>>> batchUpdateFullComplex){
+        return batchUpdateFullByRecord(batchUpdateFullComplex.stream()
+                .map(pair->Triple.of(
+                        //record
+                        pair.getLeft().getLeft(),
+                        //conds
+                        pair.getLeft().getMiddle().craft(pair.getLeft().getRight()),
+                        //excludeColumns
+                        pair.getRight()))
+                .collect(Collectors.toList()));
+    }
+
     public <T> int updateFull(T record, T condObj, String ... excludeColumns) {
         return updateFull(record, this::fromTableDomain, condObj, excludeColumns);
     }
 
+    public int[] batchUpdateFullAutoCond(List<Triple<Object,Object,List<String>>> recordCondObjExcludeColumnsTriples){
+        return batchUpdateFullByRecord(recordCondObjExcludeColumnsTriples.stream()
+                .map(triple -> Triple.of(
+                        //record
+                        triple.getLeft(),
+                        //conds
+                        fromTableDomain(triple.getMiddle()),
+                        //excludeColumns
+                        triple.getRight()))
+                .collect(Collectors.toList()));
+    }
+
     public int updateFullByPrimary(Object record, String ... excludeColumns){
         return updateFull(TableLoc.findTableName(record.getClass(),getDataSource()),record,getPrimaryConds(record),Arrays.asList(excludeColumns),false);
+    }
+
+    public int[] batchUpdateFullByPrimary(List<Pair<Object,List<String>>> recordExcludeColumnsPairs){
+        return batchUpdateFull(recordExcludeColumnsPairs.stream()
+                .map(pair -> Pair.of(Triple.of(
+                        //table
+                        TableLoc.findTableName(pair.getLeft().getClass(),getDataSource()),
+                        //record
+                        pair.getLeft(),
+                        //conds
+                        getPrimaryConds(pair.getLeft())
+                ),Pair.of(
+                        //excludeColumns
+                        pair.getRight(),
+                        //includePrimary
+                        true)
+                ))
+                .collect(Collectors.toList()));
     }
 
     public boolean exist(Class<?> clazz, List<Cond> conds) {

@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CoreRunner {
     private static final Logger logger = LoggerFactory.getLogger(CoreRunner.class);
@@ -244,7 +243,7 @@ public class CoreRunner {
             long end = System.currentTimeMillis();
             long timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
-            log(sql, interceptorContext, Arrays.stream(affected).boxed().collect(Collectors.toList()), "BATCH-AFFECTED", timeCost);
+            log(sql, interceptorContext, Arrays.toString(affected), "BATCH-AFFECTED", timeCost);
         } catch (SQLException e) {
             throw new DBException(e);
         }finally {

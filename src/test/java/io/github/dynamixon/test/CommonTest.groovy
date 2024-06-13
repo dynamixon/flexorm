@@ -10,18 +10,14 @@ import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode
 import io.github.dynamixon.flexorm.logic.TableLoc
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache
 import io.github.dynamixon.flexorm.misc.*
-import io.github.dynamixon.flexorm.pojo.ColumnValuePair4Update
-import io.github.dynamixon.flexorm.pojo.Cond
-import io.github.dynamixon.flexorm.pojo.Config
-import io.github.dynamixon.flexorm.pojo.Null
-import io.github.dynamixon.flexorm.pojo.OrderCond
-import io.github.dynamixon.flexorm.pojo.Paginator
+import io.github.dynamixon.flexorm.pojo.*
 import io.github.dynamixon.test.transaction.TransactionTest
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.collections.MapUtils
 import org.apache.commons.dbutils.QueryRunner
 import org.apache.commons.dbutils.ResultSetHandler
 import org.apache.commons.lang3.math.NumberUtils
+import org.apache.commons.lang3.tuple.Pair
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -215,6 +211,7 @@ class CommonTest {
                     updateSelectiveByFieldOrColumn()
                     updateFull()
                     extraCondUpdateFull()
+                    batchUpdateSelective()
                     persist()
                     persistNoCondFail()
                     insertAndReturnAutoGen()
@@ -301,7 +298,7 @@ class CommonTest {
             qe7.setConfig(new Config())
             assert false
         } catch (Exception e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalStateException
             assert e.getMessage().contains("CoreRunner hasn't been initialized!")
         }
     }
@@ -1435,6 +1432,35 @@ class CommonTest {
         assert MiscUtil.extractFieldValueFromObj(updatedRecord,nullField4Test()[0]) == null
     }
 
+    void batchUpdateSelective(){
+        logger.info ' -- batchUpdateSelective -- '
+        List<? extends DummyTable> list = GeneralThreadLocal.get("allRecords")
+        def id2Update1 = MiscUtil.extractFieldValueFromObj(list.get(1),"id")
+        def id2Update2 = MiscUtil.extractFieldValueFromObj(list.get(2),"id")
+        def record1 = getCurrentClass().newInstance()
+        def record2 = getCurrentClass().newInstance()
+        String nullField = nullField4Test()[0]
+        String nullColumn = nullField4Test()[1]
+        MiscUtil.setValue(record1,nullField,'1')
+        MiscUtil.setValue(record2,nullField,'2')
+        def updateNums = qe.prep(
+                sqlId(verboseSqlId("batchUpdateSelective step1")),
+        ).batchUpdateSelectiveVarargs(
+                Pair.of(record1,[new Cond('id', id2Update1)]),
+                Pair.of(record2,[new Cond('id', id2Update2)])
+        )
+        assert updateNums.size() == 2
+        assert updateNums[0] == 1
+        assert updateNums[1] == 1
+        def records = qe.prep(
+                sqlId(verboseSqlId("batchUpdateSelective step2")),
+                selectColumns('id', nullColumn),
+                order(new OrderCond('id'))
+        ).findObjectsT(getCurrentClass(), [new Cond('id', 'in', [id2Update1, id2Update2])])
+        assert MiscUtil.extractFieldValueFromObj(records[0],nullField) == '1'
+        assert MiscUtil.extractFieldValueFromObj(records[1],nullField) == '2'
+    }
+
     void persist(){
         logger.info ' -- persist -- '
         def record = MiscUtil.getFirst(CommonTool.generateDummyRecords(getCurrentClass(), 1))
@@ -1481,7 +1507,7 @@ class CommonTest {
             qe.persist(record,new Cond[0])
             assert false
         } catch (Exception e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains("conditions can't be empty for persist")
         }
     }
@@ -1584,7 +1610,7 @@ class CommonTest {
             qe.delObjects(getCurrentClass())
             assert false
         } catch (Exception e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Delete without condition')
         }
     }
@@ -1615,7 +1641,7 @@ class CommonTest {
             ).updateSelective(record)
             assert false
         } catch (e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Update without condition')
         }
         try {
@@ -1625,7 +1651,7 @@ class CommonTest {
             ).delObjects(getCurrentClass())
             assert false
         } catch (e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Delete without condition')
         }
         try {
@@ -1635,7 +1661,7 @@ class CommonTest {
             ).updateSelective(record,new Cond('id',null))
             assert false
         } catch (e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Update without condition')
         }
         try {
@@ -1645,7 +1671,7 @@ class CommonTest {
             ).delObjects(getCurrentClass(),new Cond('id',null))
             assert false
         } catch (e) {
-            assert e instanceof DBException
+            assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Delete without condition')
         }
     }
