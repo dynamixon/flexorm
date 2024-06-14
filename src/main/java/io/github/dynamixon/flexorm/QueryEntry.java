@@ -609,7 +609,15 @@ public class QueryEntry {
             return new int[]{-1};
         }
         return batchUpdate(tableRecordCondsTriples.stream()
-                        .map(triple -> Triple.of(triple.getLeft(),toColumnValueMap(triple.getMiddle()), triple.getRight()))
+                        .map(triple -> Triple.of(
+                                    // table
+                                    triple.getLeft(),
+                                    // updateValueMap
+                                    toColumnValueMap(triple.getMiddle()),
+                                    // conds
+                                    triple.getRight()
+                                )
+                        )
                         .collect(Collectors.toList()));
     }
 
