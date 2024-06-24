@@ -465,11 +465,11 @@ public class QueryEntry {
     public int batchInsertWithSize(int bulkSize, Object... records) {
         if (records != null && records.length > 0) {
             Object first = records[0];
-            if (records.length == 1 && first instanceof List) {
-                List<?> list = (List<?>) first;
-                if (CollectionUtils.isNotEmpty(list)) {
-                    String tableName = TableLoc.findTableName(list.get(0).getClass(),getDataSource());
-                    return batchInsertToTable(tableName, bulkSize, list.toArray());
+            if (records.length == 1 && first instanceof Collection) {
+                Collection<?> coll = (Collection<?>) first;
+                if (CollectionUtils.isNotEmpty(coll)) {
+                    String tableName = TableLoc.findTableName(MiscUtil.getFirst(coll).getClass(),getDataSource());
+                    return batchInsertToTable(tableName, bulkSize, coll.toArray());
                 }
             } else {
                 String tableName = TableLoc.findTableName(first.getClass(),getDataSource());
