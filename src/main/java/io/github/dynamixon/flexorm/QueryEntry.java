@@ -1,6 +1,7 @@
 package io.github.dynamixon.flexorm;
 
 import com.google.common.collect.Lists;
+import io.github.dynamixon.flexorm.enums.BatchInsertMode;
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.TableLoc;
 import io.github.dynamixon.flexorm.logic.TableObjectMetaCache;
@@ -434,11 +435,13 @@ public class QueryEntry {
         String sqlId = ExtraParamInjector.getSqlId();
         SqlExecutionInterceptor sqlExecutionInterceptor = ExtraParamInjector.getSqlInterceptor();
         SqlExecutionInterceptorChainMode sqlInterceptorChainMode = ExtraParamInjector.getSqlInterceptorChainMode();
+        BatchInsertMode batchInsertMode = ExtraParamInjector.getBatchInsertMode();
         boolean interceptorSpan = sqlExecutionInterceptor !=null&& sqlExecutionInterceptor.spanWithin();
         for (List<Map<String, Object>> list : dataMap.values()) {
             List<List<Map<String, Object>>> partitions = Lists.partition(list, bulkSize);
             for (List<Map<String, Object>> partition : partitions) {
                 ExtraParamInjector.sqlId(sqlId);
+                ExtraParamInjector.batchInsertMode(batchInsertMode);
                 if(interceptorSpan){
                     ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 }

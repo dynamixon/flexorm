@@ -6,6 +6,7 @@ import io.github.dynamixon.flexorm.dialect.DialectFactory;
 import io.github.dynamixon.flexorm.dialect.batch.BatchInserter;
 import io.github.dynamixon.flexorm.dialect.batch.DefaultBatchInserter;
 import io.github.dynamixon.flexorm.dialect.pagination.*;
+import io.github.dynamixon.flexorm.enums.BatchInsertMode;
 import io.github.dynamixon.flexorm.enums.LoggerLevel;
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.logic.SqlBuilder;
@@ -347,7 +348,15 @@ public class CoreRunner {
     }
 
     public int batchInsert(String table, List<Map<String, Object>> listMap) {
-        return batchInserter.batchInsert(this, table, listMap);
+        try {
+            BatchInsertMode batchInsertMode = ExtraParamInjector.getBatchInsertMode();
+            if(BatchInsertMode.JDBC_BATCH == batchInsertMode){
+                return new DefaultBatchInserter().batchInsert(this,table,listMap);
+            }
+            return batchInserter.batchInsert(this,table,listMap);
+        } finally {
+            ExtraParamInjector.unsetBatchInsertMode();
+        }
     }
 
     public List<String> getColNames(String table) {

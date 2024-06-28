@@ -120,4 +120,6 @@ public interface DzConst {
 
     String JOINS = PREFIX+"joins";
 
+    String BATCH_INSERT_MODE = PREFIX+"batchInsertMode";
+
 }

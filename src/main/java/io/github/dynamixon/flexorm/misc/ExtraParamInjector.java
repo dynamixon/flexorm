@@ -1,5 +1,6 @@
 package io.github.dynamixon.flexorm.misc;
 
+import io.github.dynamixon.flexorm.enums.BatchInsertMode;
 import io.github.dynamixon.flexorm.enums.SqlExecutionInterceptorChainMode;
 import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
@@ -168,6 +169,17 @@ public class ExtraParamInjector {
         return paramPrep;
     }
 
+    public static ParamPrep batchInsertMode(BatchInsertMode batchInsertMode){
+        if(batchInsertMode!=null){
+            GeneralThreadLocal.set(DzConst.BATCH_INSERT_MODE, batchInsertMode);
+        }
+        return paramPrep;
+    }
+
+    public static ParamPrep jdbcBatchInsertMode(){
+        return batchInsertMode(BatchInsertMode.JDBC_BATCH);
+    }
+
     public static Paginator getPaginator(){
         return GeneralThreadLocal.get((DzConst.PAGINATOR));
     }
@@ -238,6 +250,10 @@ public class ExtraParamInjector {
         return GeneralThreadLocal.get(DzConst.JOINS);
     }
 
+    public static BatchInsertMode getBatchInsertMode(){
+        return GeneralThreadLocal.get(DzConst.BATCH_INSERT_MODE);
+    }
+
     public static void unsetForQuery(){
         PagingInjector.unset();
         GeneralThreadLocal.unset(DzConst.SELECT_COLUMNS);
@@ -303,5 +319,9 @@ public class ExtraParamInjector {
 
     public static void unsetIgnoreColumnsFromCondForUpdate(){
         GeneralThreadLocal.unset(DzConst.IGNORE_COLUMNS_FROM_COND_FOR_UPDATE);
+    }
+
+    public static void unsetBatchInsertMode(){
+        GeneralThreadLocal.unset(DzConst.BATCH_INSERT_MODE);
     }
 }
