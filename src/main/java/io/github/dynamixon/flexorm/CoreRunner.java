@@ -340,26 +340,42 @@ public class CoreRunner {
 
     public List<String> getColNames(String table) {
         List<String> cols = null;
+        InterceptorContext interceptorContext = null;
+        String sql = "";
+        String outputDenote = "RESULT-SIZE";
+        long timeCost = 0L;
         try {
             long start = System.currentTimeMillis();
-            String sql = "select * from " + table + " where 1=2";
-            cols = queryRunner.query(sql, resultSet -> {
-                List<String> cols1 = new ArrayList<>();
-                ResultSetMetaData metaData = resultSet.getMetaData();
-                int columnCount = metaData.getColumnCount();
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = metaData.getColumnLabel(i);
-                    if (null == columnName || 0 == columnName.length()) {
-                        columnName = metaData.getColumnName(i);
+            sql = "select * from " + table + " where 1=2";
+            interceptorContext = initInterceptorContext(sql,null,config.getGlobalSqlExecutionInterceptor());
+            if(interceptorContext.isResultDelegate()){
+                cols = interceptorContext.getGenericDelegateResult();
+            }else {
+                cols = queryRunner.query(sql, resultSet -> {
+                    List<String> cols1 = new ArrayList<>();
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnLabel(i);
+                        if (null == columnName || 0 == columnName.length()) {
+                            columnName = metaData.getColumnName(i);
+                        }
+                        cols1.add(columnName);
                     }
-                    cols1.add(columnName);
-                }
-                return cols1;
-            });
+                    return cols1;
+                });
+            }
             long end = System.currentTimeMillis();
-            log(sql, null, cols, "RESULT-SIZE", (end - start));
-        } catch (SQLException e) {
+            timeCost = end - start;
+            interceptorContext.setTimeCost(timeCost);
+        } catch (Throwable e) {
+            if (interceptorContext!=null){
+                interceptorContext.setException(e);
+            }
             throw new DBException(e);
+        }finally {
+            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            log(sql, interceptorContext, cols, outputDenote, timeCost);
         }
         return cols;
     }
@@ -376,7 +392,7 @@ public class CoreRunner {
                 String comment = tablesRs.getString("REMARKS");
                 map.put(tableName, comment);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new DBException(e);
         }
         return map;
