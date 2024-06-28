@@ -201,8 +201,11 @@ public class CoreRunner {
             }
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            log(sql, interceptorContext, result, outputDenote, timeCost);
+            try {
+                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            } finally {
+                log(sql, interceptorContext, result, outputDenote, timeCost);
+            }
         }
         return result;
     }
@@ -231,8 +234,11 @@ public class CoreRunner {
             }
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            log(sql, interceptorContext, affected, outputDenote, timeCost);
+            try {
+                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            } finally {
+                log(sql, interceptorContext, affected, outputDenote, timeCost);
+            }
         }
         return affected;
     }
@@ -261,8 +267,11 @@ public class CoreRunner {
             }
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            log(sql, interceptorContext, Arrays.toString(affected), outputDenote, timeCost);
+            try {
+                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            } finally {
+                log(sql, interceptorContext, Arrays.toString(affected), outputDenote, timeCost);
+            }
         }
         return affected;
     }
@@ -328,8 +337,11 @@ public class CoreRunner {
             }
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            log(sql, interceptorContext, rt, outputDenote, timeCost);
+            try {
+                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            } finally {
+                log(sql, interceptorContext, rt, outputDenote, timeCost);
+            }
         }
         return rt;
     }
@@ -374,8 +386,11 @@ public class CoreRunner {
             }
             throw new DBException(e);
         }finally {
-            postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            log(sql, interceptorContext, cols, outputDenote, timeCost);
+            try {
+                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            } finally {
+                log(sql, interceptorContext, cols, outputDenote, timeCost);
+            }
         }
         return cols;
     }
