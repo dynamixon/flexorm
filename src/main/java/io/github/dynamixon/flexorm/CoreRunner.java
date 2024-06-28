@@ -22,6 +22,7 @@ import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,14 +165,16 @@ public class CoreRunner {
             String countSql = "select count(*) as count from ("+sql+") count_tmp_tbl";
             List<CountInfo> countInfos = genericQry(countSql,CountInfo.class,values);
             return countInfos.get(0).getCount();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new DBException(e);
         }
     }
 
     public <T> T genericQry(String sql, ResultSetHandler<T> resultSetHandler, Object[] values) {
-        T result;
+        T result = null;
         InterceptorContext interceptorContext = null;
+        String outputDenote = "";
+        long timeCost = 0L;
         try {
             interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
@@ -183,7 +186,6 @@ public class CoreRunner {
                 interceptorContext.setRealResult(result);
             }
             long end = System.currentTimeMillis();
-            String outputDenote = "";
             if (result != null) {
                 if (result instanceof List) {
                     outputDenote = "RESULT-SIZE";
@@ -191,13 +193,16 @@ public class CoreRunner {
                     outputDenote = "OUTPUT";
                 }
             }
-            long timeCost = end - start;
+            timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
-            log(sql, interceptorContext, result, outputDenote, timeCost);
-        } catch (SQLException e) {
+        } catch (Throwable e) {
+            if (interceptorContext!=null){
+                interceptorContext.setException(e);
+            }
             throw new DBException(e);
         }finally {
             postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            log(sql, interceptorContext, result, outputDenote, timeCost);
         }
         return result;
     }
@@ -205,6 +210,8 @@ public class CoreRunner {
     public int genericUpdate(String sql, Object[] values) {
         int affected = 0;
         InterceptorContext interceptorContext = null;
+        String outputDenote = "AFFECTED";
+        long timeCost = 0L;
         try {
             interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
@@ -216,20 +223,25 @@ public class CoreRunner {
                 interceptorContext.setRealResult(affected);
             }
             long end = System.currentTimeMillis();
-            long timeCost = end - start;
+            timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
-            log(sql, interceptorContext, affected, "AFFECTED", timeCost);
-        } catch (SQLException e) {
+        } catch (Throwable e) {
+            if (interceptorContext!=null){
+                interceptorContext.setException(e);
+            }
             throw new DBException(e);
         }finally {
             postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            log(sql, interceptorContext, affected, outputDenote, timeCost);
         }
         return affected;
     }
 
     public int[] genericBatchUpdate(String sql, Object[][] values) {
-        int[] affected;
+        int[] affected = null;
         InterceptorContext interceptorContext = null;
+        String outputDenote = "BATCH-AFFECTED";
+        long timeCost = 0L;
         try {
             interceptorContext = initInterceptorContext(sql,values,config.getGlobalSqlExecutionInterceptor());
             sql = getIdSql(interceptorContext.getSql());
@@ -241,13 +253,16 @@ public class CoreRunner {
                 interceptorContext.setRealResult(affected);
             }
             long end = System.currentTimeMillis();
-            long timeCost = end - start;
+            timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
-            log(sql, interceptorContext, Arrays.toString(affected), "BATCH-AFFECTED", timeCost);
-        } catch (SQLException e) {
+        } catch (Throwable e) {
+            if (interceptorContext!=null){
+                interceptorContext.setException(e);
+            }
             throw new DBException(e);
         }finally {
             postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            log(sql, interceptorContext, Arrays.toString(affected), outputDenote, timeCost);
         }
         return affected;
     }
@@ -290,25 +305,31 @@ public class CoreRunner {
         long start = System.currentTimeMillis();
         T rt = null;
         InterceptorContext interceptorContext = null;
+        String sql = "";
+        String outputDenote = "OUTPUT";
+        long timeCost = 0L;
         try {
             SqlValuePart sqlValuePart = composeInsertSqlValuePart(table, valueMap);
             Object[] valueArr = sqlValuePart.getValueParts().toArray();
             interceptorContext = initInterceptorContext(sqlValuePart.getSqlPart(),valueArr,config.getGlobalSqlExecutionInterceptor());
-            StringBuilder sql = new StringBuilder(getIdSql(interceptorContext.getSql()));
+            sql = getIdSql(interceptorContext.getSql());
             if(interceptorContext.isResultDelegate()){
                 rt = interceptorContext.getGenericDelegateResult();
             }else {
-                rt = queryRunner.insert(sql.toString(), resultSetHandler, interceptorContext.getValues());
+                rt = queryRunner.insert(sql, resultSetHandler, interceptorContext.getValues());
                 interceptorContext.setRealResult(rt);
             }
             long end = System.currentTimeMillis();
-            long timeCost = end - start;
+            timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
-            log(sql.toString(), interceptorContext, rt, "OUTPUT", timeCost);
-        } catch (SQLException e) {
+        } catch (Throwable e) {
+            if (interceptorContext!=null){
+                interceptorContext.setException(e);
+            }
             throw new DBException(e);
         }finally {
             postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
+            log(sql, interceptorContext, rt, outputDenote, timeCost);
         }
         return rt;
     }
@@ -365,6 +386,7 @@ public class CoreRunner {
         try {
             Object[] values = interceptorContext ==null?null: interceptorContext.getValues();
             boolean resultDelegate = interceptorContext != null && interceptorContext.isResultDelegate();
+            boolean hasException = interceptorContext != null && interceptorContext.hasException();
             Boolean ignoreLog = GeneralThreadLocal.get(DzConst.IGNORE_LOG);
             if(ignoreLog!=null&&ignoreLog){
                 return;
@@ -373,6 +395,10 @@ public class CoreRunner {
             String log = delegateFlag+"===> SQL: " + sql;
             if (values != null) {
                 log += "  VALUES: " + Arrays.deepToString(values);
+            }
+            if(hasException){
+                output = ExceptionUtils.getStackTrace(interceptorContext.getException());
+                outputDenote = "EXCEPTION";
             }
             if (output != null) {
                 if ("RESULT-SIZE".equalsIgnoreCase(outputDenote)) {
@@ -404,7 +430,7 @@ public class CoreRunner {
                     logger.debug(log);
                     break;
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             logger.warn("log error", e);
         }
     }

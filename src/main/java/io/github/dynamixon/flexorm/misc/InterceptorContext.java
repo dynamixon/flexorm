@@ -14,6 +14,7 @@ public class InterceptorContext {
     private Object delegatedResult;
     private Object realResult;
     private Long timeCost;
+    private Throwable exception;
     private volatile Map<String,Object> extraContextInfo;
 
     public InterceptorContext() {
@@ -73,6 +74,26 @@ public class InterceptorContext {
         this.timeCost = timeCost;
     }
 
+    public Throwable getException() {
+        return exception;
+    }
+
+    public void setException(Throwable exception) {
+        this.exception = exception;
+    }
+
+    public Map<String, Object> getExtraContextInfo() {
+        return extraContextInfo;
+    }
+
+    public void setExtraContextInfo(Map<String, Object> extraContextInfo) {
+        this.extraContextInfo = extraContextInfo;
+    }
+
+    public boolean hasException(){
+        return exception != null;
+    }
+
     public <T> T getGenericDelegateResult(){
         if(!resultDelegate){
             return null;
@@ -84,14 +105,6 @@ public class InterceptorContext {
             return ((DelegatedResultGenerator<T>) delegatedResult).generate(this);
         }
         return (T) delegatedResult;
-    }
-
-    public Map<String, Object> getExtraContextInfo() {
-        return extraContextInfo;
-    }
-
-    public void setExtraContextInfo(Map<String, Object> extraContextInfo) {
-        this.extraContextInfo = extraContextInfo;
     }
 
     public void putToExtraContextInfo(String key, Object value){
