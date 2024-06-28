@@ -415,6 +415,9 @@ public class CoreRunner {
                 log += "\n<==< INVOKE-CHAIN:"+conciseStack(stack);
             }
             LoggerLevel loggerLevel = getConfig().getLoggerLevel();
+            if (hasException){
+                loggerLevel = LoggerLevel.ERROR;
+            }
             if(loggerLevel==null){
                 logger.debug(log);
                 return;
@@ -425,6 +428,9 @@ public class CoreRunner {
                     break;
                 case WARN:
                     logger.warn(log);
+                    break;
+                case ERROR:
+                    logger.error(log);
                     break;
                 default:
                     logger.debug(log);
