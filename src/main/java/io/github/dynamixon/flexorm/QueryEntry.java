@@ -463,20 +463,32 @@ public class QueryEntry {
     }
 
     public int batchInsertWithSize(int bulkSize, Object... records) {
+        AtomicInteger num = new AtomicInteger();
         if (records != null && records.length > 0) {
             Object first = records[0];
+            Collection<?> coll;
             if (records.length == 1 && first instanceof Collection) {
-                Collection<?> coll = (Collection<?>) first;
-                if (CollectionUtils.isNotEmpty(coll)) {
-                    String tableName = TableLoc.findTableName(MiscUtil.getFirst(coll).getClass(),getDataSource());
-                    return batchInsertToTable(tableName, bulkSize, coll.toArray());
-                }
+                coll = (Collection<?>) first;
             } else {
-                String tableName = TableLoc.findTableName(first.getClass(),getDataSource());
-                return batchInsertToTable(tableName, bulkSize, records);
+                coll = Arrays.asList(records);
             }
+            Map<Class<?>,List<Object>> recordsMap = new LinkedHashMap<>();
+            coll.forEach(c -> {
+                Class<?> tableClass = c.getClass();
+                List<Object> partRecords = recordsMap.get(tableClass);
+                if(partRecords!=null){
+                    partRecords.add(c);
+                }else {
+                    partRecords = new ArrayList<>();
+                    partRecords.add(c);
+                    recordsMap.put(tableClass,partRecords);
+                }
+            });
+            recordsMap.forEach((tableClass, partRecords) -> {
+                num.addAndGet(batchInsertToTable(TableLoc.findTableName(tableClass, getDataSource()), bulkSize, partRecords.toArray()));
+            });
         }
-        return 0;
+        return num.get();
     }
 
     public int batchInsert(Object... records) {
