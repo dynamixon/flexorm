@@ -352,38 +352,33 @@ public class CoreRunner {
 
     public List<String> getColNames(String table) {
         List<String> cols = null;
-        InterceptorContext interceptorContext = null;
+        InterceptorContext interceptorContext = new InterceptorContext();
         String sql = "";
         String outputDenote = "RESULT-SIZE";
         long timeCost = 0L;
         try {
             long start = System.currentTimeMillis();
             sql = "select * from " + table + " where 1=2";
-            interceptorContext = initInterceptorContext(sql,null,config.getGlobalSqlExecutionInterceptor());
-            if(interceptorContext.isResultDelegate()){
-                cols = interceptorContext.getGenericDelegateResult();
-            }else {
-                cols = queryRunner.query(sql, resultSet -> {
-                    List<String> cols1 = new ArrayList<>();
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-                    for (int i = 1; i <= columnCount; i++) {
-                        String columnName = metaData.getColumnLabel(i);
-                        if (null == columnName || 0 == columnName.length()) {
-                            columnName = metaData.getColumnName(i);
-                        }
-                        cols1.add(columnName);
+            interceptorContext.setSql(sql);
+            cols = queryRunner.query(sql, resultSet -> {
+                List<String> cols1 = new ArrayList<>();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = metaData.getColumnLabel(i);
+                    if (null == columnName || 0 == columnName.length()) {
+                        columnName = metaData.getColumnName(i);
                     }
-                    return cols1;
-                });
-            }
+                    cols1.add(columnName);
+                }
+                return cols1;
+            });
+            interceptorContext.setRealResult(cols);
             long end = System.currentTimeMillis();
             timeCost = end - start;
             interceptorContext.setTimeCost(timeCost);
         } catch (Throwable e) {
-            if (interceptorContext!=null){
-                interceptorContext.setException(e);
-            }
+            interceptorContext.setException(e);
             throw new DBException(e);
         }finally {
             try {
