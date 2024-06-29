@@ -390,11 +390,7 @@ public class CoreRunner {
             interceptorContext.setException(e);
             throw new DBException(e);
         }finally {
-            try {
-                postIntercept(interceptorContext,config.getGlobalSqlExecutionInterceptor());
-            } finally {
-                log(sql, interceptorContext, cols, outputDenote, timeCost);
-            }
+            log(sql, interceptorContext, cols, outputDenote, timeCost);
         }
         return cols;
     }
