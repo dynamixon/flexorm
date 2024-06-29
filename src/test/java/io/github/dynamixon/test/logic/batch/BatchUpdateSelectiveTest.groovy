@@ -10,7 +10,7 @@ import org.apache.commons.lang3.tuple.Pair
 import org.apache.commons.lang3.tuple.Triple
 import org.junit.Test
 
-import static io.github.dynamixon.test.logic.LogicTester.genValidatorForBatchUpdate
+import static io.github.dynamixon.test.logic.LogicTester.genValidatorForBatchUpdateSelective
 
 class BatchUpdateSelectiveTest implements LogicTestBase{
     @Test
@@ -24,7 +24,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
     }
 
     static void batchUpdateSelectiveByPrimaryVarargs(){
-        Closure<?> validator = genValidatorForBatchUpdate(
+        Closure<?> validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,2L].toArray()]
         )
         Map<String,?> sqlDelegatedResultMap = ['update logic_table_A  set int_f = ? where id = ?':[1,2] as int[]]
@@ -36,7 +36,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
             assert Arrays.deepToString(rt) == Arrays.deepToString([1,2].toArray())
         }
 
-        validator = genValidatorForBatchUpdate(
+        validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,3L].toArray()],
                 'update logic_table_A  set boolean_f = ? where id = ?':[[true,2L].toArray(),[false,4L].toArray()]
         )
@@ -53,7 +53,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
     }
 
     static void batchUpdateSelectiveAutoCondVarargs(){
-        Closure<?> validator = genValidatorForBatchUpdate(
+        Closure<?> validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,2L].toArray()]
         )
         Map<String,?> sqlDelegatedResultMap = ['update logic_table_A  set int_f = ? where id = ?':[1,2] as int[]]
@@ -65,7 +65,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
             assert Arrays.deepToString(rt) == Arrays.deepToString([1,2].toArray())
         }
 
-        validator = genValidatorForBatchUpdate(
+        validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,3L].toArray()],
                 'update logic_table_A  set boolean_f = ? where id = ?':[[true,2L].toArray(),[false,4L].toArray()]
         )
@@ -87,7 +87,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
     }
 
     static void batchUpdateSelectiveConciseVarargs(){
-        Closure<?> validator = genValidatorForBatchUpdate(
+        Closure<?> validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,2L].toArray()]
         )
         Map<String,?> sqlDelegatedResultMap = ['update logic_table_A  set int_f = ? where id = ?':[1,2] as int[]]
@@ -99,7 +99,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
             assert Arrays.deepToString(rt) == Arrays.deepToString([1,2].toArray())
         }
 
-        validator = genValidatorForBatchUpdate(
+        validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,3L].toArray()],
                 'update logic_table_A  set boolean_f = ? where id = ?':[[true,2L].toArray(),[false,4L].toArray()]
         )
@@ -121,7 +121,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
     }
 
     static void batchUpdateSelectiveByTableVarargs(){
-        Closure<?> validator = genValidatorForBatchUpdate(
+        Closure<?> validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,2L].toArray()]
         )
         Map<String,?> sqlDelegatedResultMap = ['update logic_table_A  set int_f = ? where id = ?':[1,2] as int[]]
@@ -133,7 +133,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
             assert Arrays.deepToString(rt) == Arrays.deepToString([1,2].toArray())
         }
 
-        validator = genValidatorForBatchUpdate(
+        validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,3L].toArray()],
                 'update logic_table_A  set boolean_f = ? where id = ?':[[true,2L].toArray(),[false,4L].toArray()]
         )
@@ -156,7 +156,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
 
     static void batchUpdateSelectiveWithCondCrafter(){
         CondCrafter<List<Cond>> crafter = c -> c
-        Closure<?> validator = genValidatorForBatchUpdate(
+        Closure<?> validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,2L].toArray()]
         )
         Map<String,?> sqlDelegatedResultMap = ['update logic_table_A  set int_f = ? where id = ?':[1,2] as int[]]
@@ -168,7 +168,7 @@ class BatchUpdateSelectiveTest implements LogicTestBase{
             assert Arrays.deepToString(rt) == Arrays.deepToString([1,2].toArray())
         }
 
-        validator = genValidatorForBatchUpdate(
+        validator = genValidatorForBatchUpdateSelective(
                 'update logic_table_A  set int_f = ? where id = ?':[[999,1L].toArray(),[999,3L].toArray()],
                 'update logic_table_A  set boolean_f = ? where id = ?':[[true,2L].toArray(),[false,4L].toArray()]
         )

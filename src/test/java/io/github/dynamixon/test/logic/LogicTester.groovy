@@ -138,7 +138,7 @@ class LogicTester {
         }
     }
 
-    static Closure<?> genValidatorForBatchUpdate(Map<String,Object[][]> expectedSqlValuesMap){
+    static Closure<?> genValidatorForBatchUpdateSelective(Map<String,Object[][]> expectedSqlValuesMap){
         return { InterceptorContext interceptorContext ->
             def sql = interceptorContext.getSql()
             def values = interceptorContext.values

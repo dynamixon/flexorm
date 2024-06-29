@@ -885,7 +885,7 @@ public class QueryEntry {
                         //excludeColumns
                         pair.getRight(),
                         //includePrimary
-                        true)
+                        false)
                 ))
                 .collect(Collectors.toList()));
     }
