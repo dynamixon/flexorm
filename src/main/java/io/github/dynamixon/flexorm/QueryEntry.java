@@ -257,26 +257,6 @@ public class QueryEntry {
                 if(interceptorSpan){
                     ExtraParamInjector.interceptWithChainMode(sqlExecutionInterceptor,sqlInterceptorChainMode!=null?sqlInterceptorChainMode:SqlExecutionInterceptorChainMode.CHAIN_AFTER_GLOBAL);
                 }
-//                if(CollectionUtils.isNotEmpty(groupByColumns)){
-//                    qryCondition.setOffset(null);
-//                    qryCondition.setLimit(null);
-//                    qryCondition.setOrderConds(null);
-//                    SqlPreparedBundle sqlPreparedBundle = coreRunner.getSqlBuilder().composeSelect(qryCondition);
-//                    PagingInjector.setCount(coreRunner.genericCount(sqlPreparedBundle.getSql(),sqlPreparedBundle.getValues()));
-//                }else {
-//                    QueryConditionBundle qcCount = new QueryConditionBundle.Builder()
-//                        .targetTable(qryCondition.getTargetTable())
-//                        .onlyCount(true)
-//                        .tableClass(qryCondition.getTableClass())
-//                        .tableAliasForJoin(qryCondition.getTableAliasForJoin())
-//                        .joins(qryCondition.getJoins())
-//                        .resultClass(CountInfo.class)
-//                        .conditionAndList(qryCondition.getConditionAndList())
-//                        .conditionOrList(qryCondition.getConditionOrList())
-//                        .build();
-//                    List<CountInfo> counts = genericQry(qcCount);
-//                    PagingInjector.setCount(counts.get(0).getCount());
-//                }
                 PagingInjector.setCount(countInner(table,conds,clazz,false));
             }
         } finally {

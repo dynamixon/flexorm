@@ -220,6 +220,7 @@ class CommonTest {
                     extraCondDel()
                     delNoCondFail()
                     batchInsertVarArg()
+                    jdbcBatchInsert()
                     emptyCondBlock()
                     delAll()
                     tx()
@@ -1621,6 +1622,16 @@ class CommonTest {
         def insertNum = qe.prep(
             sqlId(verboseSqlId("batchInsertVarArg"))
         ).batchInsert(list.get(0),list.get(1))
+        assert insertNum == 2
+    }
+
+    void jdbcBatchInsert(){
+        logger.info ' -- jdbcBatchInsert -- '
+        List<? extends DummyTable> list = CommonTool.generateDummyRecords(getCurrentClass(),2)
+        def insertNum = qe.prep(
+                sqlId(verboseSqlId("jdbcBatchInsert")),
+                jdbcBatchInsertMode()
+        ).batchInsert(list)
         assert insertNum == 2
     }
 
