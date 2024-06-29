@@ -29,27 +29,19 @@ class BatchUpdateFullTest implements LogicTestBase{
     }
 
     static void batchUpdateFullByPrimary(){
-        try {
-            queryEntry.batchUpdateFullByPrimary([
-                    Pair.of(new LogicTableA(id: 1L, intF: 999),['double_f']),
-                    Pair.of(new LogicTableA(id: 2L, intF: 666),['boolean_f'])
-            ])
-            basicAssert()
-        } finally {
-            GeneralThreadLocal.unset(BATCH_UPDATE_FULL_PARAM_TL)
-        }
+        queryEntry.batchUpdateFullByPrimary([
+                Pair.of(new LogicTableA(id: 1L, intF: 999),['double_f']),
+                Pair.of(new LogicTableA(id: 2L, intF: 666),['boolean_f'])
+        ])
+        basicAssert()
     }
 
     static void batchUpdateFullAutoCond(){
-        try {
-            queryEntry.batchUpdateFullAutoCond([
-                    Triple.of(new LogicTableA(intF: 999),new LogicTableA(id: 1L),['id', 'double_f']),
-                    Triple.of(new LogicTableA(intF: 666),new LogicTableA(id: 2L),['id', 'boolean_f'])
-            ])
-            basicAssert()
-        } finally {
-            GeneralThreadLocal.unset(BATCH_UPDATE_FULL_PARAM_TL)
-        }
+        queryEntry.batchUpdateFullAutoCond([
+                Triple.of(new LogicTableA(intF: 999),new LogicTableA(id: 1L),['id', 'double_f']),
+                Triple.of(new LogicTableA(intF: 666),new LogicTableA(id: 2L),['id', 'boolean_f'])
+        ])
+        basicAssert()
     }
 
     static void batchUpdateFullWithCondCrafter(){
@@ -62,15 +54,19 @@ class BatchUpdateFullTest implements LogicTestBase{
     }
 
     static void basicAssert(){
-        List<Triple<String,Map<String, Object>, List<Cond>>> batchUpdateTriples = GeneralThreadLocal.get(BATCH_UPDATE_FULL_PARAM_TL)
-        def colValMap = getColValMap(new LogicTableA(id: 1L, intF: 999), ['id', 'double_f'])
-        mapEquals(colValMap, batchUpdateTriples[0].getMiddle())
-        assert batchUpdateTriples[0].getRight()[0].columnName == 'id'
-        assert batchUpdateTriples[0].getRight()[0].value == 1L
-        colValMap = getColValMap(new LogicTableA(id: 2L, intF: 666), ['id', 'boolean_f'])
-        mapEquals(colValMap, batchUpdateTriples[1].getMiddle())
-        assert batchUpdateTriples[1].getRight()[0].columnName == 'id'
-        assert batchUpdateTriples[1].getRight()[0].value == 2L
+        try {
+            List<Triple<String,Map<String, Object>, List<Cond>>> batchUpdateTriples = GeneralThreadLocal.get(BATCH_UPDATE_FULL_PARAM_TL)
+            def colValMap = getColValMap(new LogicTableA(id: 1L, intF: 999), ['id', 'double_f'])
+            mapEquals(colValMap, batchUpdateTriples[0].getMiddle())
+            assert batchUpdateTriples[0].getRight()[0].columnName == 'id'
+            assert batchUpdateTriples[0].getRight()[0].value == 1L
+            colValMap = getColValMap(new LogicTableA(id: 2L, intF: 666), ['id', 'boolean_f'])
+            mapEquals(colValMap, batchUpdateTriples[1].getMiddle())
+            assert batchUpdateTriples[1].getRight()[0].columnName == 'id'
+            assert batchUpdateTriples[1].getRight()[0].value == 2L
+        } finally {
+            GeneralThreadLocal.unset(BATCH_UPDATE_FULL_PARAM_TL)
+        }
     }
 
     static Map<String,Object> getColValMap(LogicTableA logicTableA, List<String> ignoredCols){
