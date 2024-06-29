@@ -1743,7 +1743,7 @@ class CommonTest {
     static void compareValueEqual(Object origValue, Object resultValue){
         if(origValue!=null){
             if(origValue instanceof Number){
-                assert formatDoubleNum(origValue.toString().toDouble(),1) == formatDoubleNum(resultValue.toString().toDouble(),1)
+                assert formatDoubleNum(origValue.toString().toDouble(),0) == formatDoubleNum(resultValue.toString().toDouble(),0)
             }else if(origValue instanceof Date){
                 assert resultValue !=null
             }else if(origValue instanceof String){

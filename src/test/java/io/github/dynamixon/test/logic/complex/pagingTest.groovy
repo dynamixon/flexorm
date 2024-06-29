@@ -12,12 +12,7 @@ import io.github.dynamixon.test.logic.LogicTestBase
 import io.github.dynamixon.test.logic.LogicTester
 import org.junit.Test
 
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.groupBy
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.having
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.intercept
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.paging
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.selectColumns
-import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.sqlId
+import static io.github.dynamixon.flexorm.misc.ExtraParamInjector.*
 import static io.github.dynamixon.test.logic.LogicTester.DIALECT_KEY
 
 class pagingTest implements LogicTestBase{
@@ -67,6 +62,9 @@ class pagingTest implements LogicTestBase{
 
             assert sqlValues.size() == 2
             def genSql = sqlValues[0].getV1().trim()
+            if(dialectValidateMap.get(it.getDialectType())==null){
+                println "!!!" + it.getDialectType() + LogicTester.allQueryEntries().size()
+            }
             def validateSql = dialectValidateMap.get(it.getDialectType())
             assert genSql == validateSql
 

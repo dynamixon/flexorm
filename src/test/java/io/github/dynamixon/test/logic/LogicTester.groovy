@@ -33,7 +33,8 @@ class LogicTester {
         ]
     }
     static {
-        DialectConst.class.getDeclaredFields().each {
+        //run test with coverage in intellij IDEA makes one synthetic field got injected into DialectConst
+        DialectConst.class.getDeclaredFields().findAll {!it.synthetic}.each {
             String dialect = it.get(null)
             dialectQEMap.put(dialect,dialectQE(dialect))
         }
