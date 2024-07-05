@@ -13,11 +13,21 @@ import java.util.List;
 public class PagingInjector {
 
     public static void fillParam(Integer pageNo, Integer pageSize, boolean needCount, OrderCond... orderConds){
-        ExtraParamInjector.paging(Paginator.paging(pageNo,pageSize,needCount,orderConds));
+        try {
+            ExtraParamInjector.paging(Paginator.paging(pageNo,pageSize,needCount,orderConds));
+        } catch (Throwable e) {
+            ExtraParamInjector.purgeExtraParam();
+            throw e;
+        }
     }
 
     public static void offset(Integer offset, Integer limit, boolean needCount, OrderCond... orderConds){
-        ExtraParamInjector.paging(Paginator.offset(offset,limit,needCount,orderConds));
+        try {
+            ExtraParamInjector.paging(Paginator.offset(offset,limit,needCount,orderConds));
+        } catch (Throwable e) {
+            ExtraParamInjector.purgeExtraParam();
+            throw e;
+        }
     }
 
     public static Integer getOffset(){

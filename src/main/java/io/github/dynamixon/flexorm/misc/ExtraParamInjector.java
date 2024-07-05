@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author mjf
@@ -19,6 +21,22 @@ public class ExtraParamInjector {
 
     public static final ParamPrep paramPrep = new ParamPrep();
 
+    public static void purgeExtraParam(){
+        Map<String, Object> tlMap = GeneralThreadLocal.get();
+        if(tlMap==null){
+            return;
+        }
+        Set<String> tlKeys = tlMap.keySet();
+        if(CollectionUtils.isEmpty(tlKeys)){
+            return;
+        }
+        tlKeys.forEach(tlKey->{
+            if(tlKey.startsWith(DzConst.EXTRA_PARAM_PREFIX)){
+                GeneralThreadLocal.unset(tlKey);
+            }
+        });
+    }
+
     public static void turnOffLogging(){
         GeneralThreadLocal.set(DzConst.IGNORE_LOG, true);
     }
@@ -27,116 +45,206 @@ public class ExtraParamInjector {
     }
 
     public static ParamPrep paging(Integer pageNo, Integer pageSize, boolean needCount, OrderCond... orderConds){
-        PagingInjector.fillParam(pageNo,pageSize,needCount,orderConds);
+        try {
+            PagingInjector.fillParam(pageNo,pageSize,needCount,orderConds);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep offset(Integer offset, Integer limit, boolean needCount, OrderCond... orderConds){
-        PagingInjector.offset(offset,limit,needCount,orderConds);
+        try {
+            PagingInjector.offset(offset,limit,needCount,orderConds);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep order(OrderCond... orderConds){
-        PagingInjector.offset(null,null,false,orderConds);
+        try {
+            PagingInjector.offset(null,null,false,orderConds);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep paging(Paginator paginator){
-        GeneralThreadLocal.set(DzConst.PAGINATOR, paginator);
+        try {
+            GeneralThreadLocal.set(DzConst.PAGINATOR, paginator);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep groupBy(String ... groupByColumns){
-        if(groupByColumns!=null&&groupByColumns.length>0){
-            GeneralThreadLocal.set(DzConst.GROUP_BY_COLUMNS, Arrays.asList(groupByColumns));
+        try {
+            if(groupByColumns!=null&&groupByColumns.length>0){
+                GeneralThreadLocal.set(DzConst.GROUP_BY_COLUMNS, Arrays.asList(groupByColumns));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep having(Cond ... conds){
-        if(conds!=null&&conds.length>0){
-            GeneralThreadLocal.set(DzConst.HAVING_CONDS, Arrays.asList(conds));
+        try {
+            if(conds!=null&&conds.length>0){
+                GeneralThreadLocal.set(DzConst.HAVING_CONDS, Arrays.asList(conds));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep selectColumns(String ... selectColumns){
-        if(selectColumns!=null&&selectColumns.length>0){
-            GeneralThreadLocal.set(DzConst.SELECT_COLUMNS, Arrays.asList(selectColumns));
+        try {
+            if(selectColumns!=null&&selectColumns.length>0){
+                GeneralThreadLocal.set(DzConst.SELECT_COLUMNS, Arrays.asList(selectColumns));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep excludeColumns(String ... excludedColumns){
-        if(excludedColumns!=null&&excludedColumns.length>0){
-            GeneralThreadLocal.set(DzConst.EXCLUDE_COLUMNS, Arrays.asList(excludedColumns));
+        try {
+            if(excludedColumns!=null&&excludedColumns.length>0){
+                GeneralThreadLocal.set(DzConst.EXCLUDE_COLUMNS, Arrays.asList(excludedColumns));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep sqlId(String sqlId){
-        if(StringUtils.isNotBlank(sqlId)){
-            GeneralThreadLocal.set(DzConst.SQL_ID, sqlId);
+        try {
+            if(StringUtils.isNotBlank(sqlId)){
+                GeneralThreadLocal.set(DzConst.SQL_ID, sqlId);
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addCond(List<Cond> conds){
-        if(CollectionUtils.isNotEmpty(conds)){
-            GeneralThreadLocal.set(DzConst.EXTRA_CONDS, MiscUtil.combineList(getExtraConds(),conds));
+        try {
+            if(CollectionUtils.isNotEmpty(conds)){
+                GeneralThreadLocal.set(DzConst.EXTRA_CONDS, MiscUtil.combineList(getExtraConds(),conds));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addCond(Cond ... conds){
-        if(conds!=null&&conds.length>0){
-            return addCond(Arrays.asList(conds));
+        try {
+            if(conds!=null&&conds.length>0){
+                return addCond(Arrays.asList(conds));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addOrCond(List<Cond> conds){
-        if(CollectionUtils.isNotEmpty(conds)){
-            GeneralThreadLocal.set(DzConst.EXTRA_OR_CONDS, MiscUtil.combineList(getExtraOrConds(), conds));
+        try {
+            if(CollectionUtils.isNotEmpty(conds)){
+                GeneralThreadLocal.set(DzConst.EXTRA_OR_CONDS, MiscUtil.combineList(getExtraOrConds(), conds));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addOrCond(Cond ... conds){
-        if(conds!=null&&conds.length>0){
-            return addOrCond(Arrays.asList(conds));
+        try {
+            if(conds!=null&&conds.length>0){
+                return addOrCond(Arrays.asList(conds));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addColumnValuePair4Update(List<ColumnValuePair4Update> columnValuePairs4Update){
-        if(CollectionUtils.isNotEmpty(columnValuePairs4Update)){
-            GeneralThreadLocal.set(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE, MiscUtil.combineList(getExtraColumnValuePairs4Update(),columnValuePairs4Update));
+        try {
+            if(CollectionUtils.isNotEmpty(columnValuePairs4Update)){
+                GeneralThreadLocal.set(DzConst.EXTRA_COLUMN_VALUE_PAIRS_4_UPDATE, MiscUtil.combineList(getExtraColumnValuePairs4Update(),columnValuePairs4Update));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep addColumnValuePair4Update(ColumnValuePair4Update ... columnValuePairs4Update){
-        if(columnValuePairs4Update!=null&&columnValuePairs4Update.length>0){
-            return addColumnValuePair4Update(Arrays.asList(columnValuePairs4Update));
+        try {
+            if(columnValuePairs4Update!=null&&columnValuePairs4Update.length>0){
+                return addColumnValuePair4Update(Arrays.asList(columnValuePairs4Update));
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep resultClass(Class<?> resultClass){
-        if(resultClass!=null){
-            GeneralThreadLocal.set(DzConst.RESULT_CLASS, resultClass);
+        try {
+            if(resultClass!=null){
+                GeneralThreadLocal.set(DzConst.RESULT_CLASS, resultClass);
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
 
     public static ParamPrep allowEmptyUpdateCond(){
-        GeneralThreadLocal.set(DzConst.ALLOW_EMPTY_UPDATE_COND, true);
+        try {
+            GeneralThreadLocal.set(DzConst.ALLOW_EMPTY_UPDATE_COND, true);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep ignoreColumnsFromCondForUpdate(){
-        GeneralThreadLocal.set(DzConst.IGNORE_COLUMNS_FROM_COND_FOR_UPDATE, true);
+        try {
+            GeneralThreadLocal.set(DzConst.IGNORE_COLUMNS_FROM_COND_FOR_UPDATE, true);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
@@ -145,33 +253,48 @@ public class ExtraParamInjector {
     }
 
     public static ParamPrep interceptWithChainMode(SqlExecutionInterceptor sqlExecutionInterceptor, SqlExecutionInterceptorChainMode chainMode){
-        GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR, sqlExecutionInterceptor);
-        GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE, chainMode);
+        try {
+            GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR, sqlExecutionInterceptor);
+            GeneralThreadLocal.set(DzConst.SQL_EXECUTION_INTERCEPTOR_CHAIN_MODE, chainMode);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
+        }
         return paramPrep;
     }
 
     public static ParamPrep joinTable(String mainTableAlias, List<Join> joins){
-        GeneralThreadLocal.set(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN, mainTableAlias);
-        if(CollectionUtils.isNotEmpty(joins)){
-            //in corporate with Join(String joinMethod, String tableName, String tableAlias, String mainTableCol, String joinTableCol)
-            joins.forEach(joinInstruction -> {
-                if(joinInstruction!=null){
-                    List<Cond> joinConds = joinInstruction.getJoinConds();
-                    if(CollectionUtils.isNotEmpty(joinConds)&&joinConds.size()==1){
-                        Cond cond = joinConds.get(0);
-                        String columnName = cond.getColumnName();
-                        cond.setColumnName(columnName.replace(Join.MAIN_TABLE_ALIAS_PLACEHOLDER,mainTableAlias));
+        try {
+            GeneralThreadLocal.set(DzConst.MAIN_TABLE_ALIAS_FOR_JOIN, mainTableAlias);
+            if(CollectionUtils.isNotEmpty(joins)){
+                //in corporate with Join(String joinMethod, String tableName, String tableAlias, String mainTableCol, String joinTableCol)
+                joins.forEach(joinInstruction -> {
+                    if(joinInstruction!=null){
+                        List<Cond> joinConds = joinInstruction.getJoinConds();
+                        if(CollectionUtils.isNotEmpty(joinConds)&&joinConds.size()==1){
+                            Cond cond = joinConds.get(0);
+                            String columnName = cond.getColumnName();
+                            cond.setColumnName(columnName.replace(Join.MAIN_TABLE_ALIAS_PLACEHOLDER,mainTableAlias));
+                        }
                     }
-                }
-            });
+                });
+            }
+            GeneralThreadLocal.set(DzConst.JOINS, joins);
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
-        GeneralThreadLocal.set(DzConst.JOINS, joins);
         return paramPrep;
     }
 
     public static ParamPrep batchInsertMode(BatchInsertMode batchInsertMode){
-        if(batchInsertMode!=null){
-            GeneralThreadLocal.set(DzConst.BATCH_INSERT_MODE, batchInsertMode);
+        try {
+            if(batchInsertMode!=null){
+                GeneralThreadLocal.set(DzConst.BATCH_INSERT_MODE, batchInsertMode);
+            }
+        } catch (Throwable e) {
+            purgeExtraParam();
+            throw e;
         }
         return paramPrep;
     }
