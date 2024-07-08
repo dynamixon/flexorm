@@ -15,12 +15,13 @@ public class Paginator {
     private Integer totalCount;
 
     public static Paginator paging(Integer pageNo, Integer pageSize, Boolean needCount, OrderCond ... orderConds){
+        Integer offset = null;
+        Integer limit = null;
         if(pageNo!=null&&pageSize!=null&&pageNo>0&&pageSize>0){
-            Integer offset = (pageNo - 1) * pageSize;
-            return offset(offset, pageSize,needCount,orderConds);
-        }else {
-            throw new IllegalArgumentException("pageNo and pageSize must all be greater than 0");
+            offset = (pageNo - 1) * pageSize;
+            limit = pageSize;
         }
+        return offset(offset, limit,needCount,orderConds);
     }
 
     public static Paginator offset(Integer offset, Integer limit, Boolean needCount, OrderCond ... orderConds){

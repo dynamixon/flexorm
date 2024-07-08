@@ -7,7 +7,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -34,7 +33,7 @@ public class ParallelTaskHub {
                     try {
                         //propagate thread local
                         if(MapUtils.isNotEmpty(gtlMap)){
-                            GeneralThreadLocal.set(new HashMap<>(gtlMap));
+                            GeneralThreadLocal.set(new ConcurrentHashMap<>(gtlMap));
                         }
                         return task.getFunction().apply(task.getParam());
                     }catch (Exception e){
@@ -75,7 +74,7 @@ public class ParallelTaskHub {
                     try {
                         //propagate thread local
                         if(MapUtils.isNotEmpty(gtlMap)){
-                            GeneralThreadLocal.set(new HashMap<>(gtlMap));
+                            GeneralThreadLocal.set(new ConcurrentHashMap<>(gtlMap));
                         }
                         return new IdentityResult(task.getTaskId(),task.getFunction().apply(task.getParam()));
                     }catch (Exception e){

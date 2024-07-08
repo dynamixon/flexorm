@@ -6,10 +6,7 @@ import io.github.dynamixon.flexorm.pojo.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author mjf
@@ -26,10 +23,10 @@ public class ExtraParamInjector {
         if(tlMap==null){
             return;
         }
-        Set<String> tlKeys = tlMap.keySet();
-        if(CollectionUtils.isEmpty(tlKeys)){
+        if(CollectionUtils.isEmpty(tlMap.keySet())){
             return;
         }
+        Set<String> tlKeys = new HashSet<>(tlMap.keySet());
         tlKeys.forEach(tlKey->{
             if(tlKey.startsWith(DzConst.EXTRA_PARAM_PREFIX)){
                 GeneralThreadLocal.unset(tlKey);
