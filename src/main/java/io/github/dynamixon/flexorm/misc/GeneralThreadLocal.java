@@ -8,6 +8,7 @@ public class GeneralThreadLocal {
 
     public static void set(Map<String,Object> map){
         if(map==null){
+            COMMON_TL.remove();
             return;
         }
         if(map instanceof ConcurrentHashMap){
