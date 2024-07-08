@@ -4,11 +4,17 @@ import io.github.dynamixon.flexorm.misc.GeneralThreadLocal
 import io.github.dynamixon.test.logic.LogicTestBase
 import org.junit.Test
 
+import java.util.concurrent.ConcurrentHashMap
+
 class GeneralThreadLocalTest implements LogicTestBase {
     @Test
     @Override
     void test() {
         def origMap = GeneralThreadLocal.get()
+        Map<String, Object> backupMap = new ConcurrentHashMap<>()
+        if(origMap!=null){
+            backupMap = new ConcurrentHashMap<>(origMap)
+        }
         try {
             nullSafeTest()
         } finally {
