@@ -508,6 +508,18 @@ class CommonTest {
 
         assert qe.prep(sqlId(verboseSqlId("querySingleAndExist step4")))
             .exist(getCurrentClass())
+
+        //test tryLimitOne
+        def rtRecord = qe.prep(
+            sqlId(verboseSqlId("querySingleAndExist step5")),
+            order(new OrderCond('id','desc'))
+        ).findObject(getCurrentClass())
+        assert rtRecord.id  == list.last().id
+
+        rtRecord = qe.prep(
+            sqlId(verboseSqlId("querySingleAndExist step6")),
+        ).findObject(getCurrentClass())
+        assert rtRecord.id  != list.last().id
     }
 
     void findOneValueTest(){

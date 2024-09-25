@@ -1109,12 +1109,14 @@ public class QueryEntry {
         return conds;
     }
 
-    private boolean existOffsetLimit(){
-        return PagingInjector.getOffset()!=null&&PagingInjector.getLimit()!=null;
-    }
-
     private void tryLimitOne(){
-        if(!existOffsetLimit()){
+        Paginator paginator = ExtraParamInjector.getPaginator();
+        if(paginator!=null){
+            if(paginator.getOffset()==null && paginator.getLimit()==null){
+                paginator.setOffset(0);
+                paginator.setLimit(1);
+            }
+        }else {
             ExtraParamInjector.offset(0,1,false);
         }
     }
