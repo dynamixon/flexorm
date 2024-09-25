@@ -280,16 +280,19 @@ public class SqlBuilder {
         if(CollectionUtils.isEmpty(excludedColumns)){
             return selectColumns;
         }
+        Set<String> finalExcludedColumns = new HashSet<>(excludedColumns);
         if(CollectionUtils.isNotEmpty(selectColumns)){
             finalSelectColumns = new ArrayList<>(selectColumns);
         }else {
             Class<?> tableClass = qc.getTableClass();
             TableObjectMetaCache.initTableObjectMeta(tableClass, coreRunner);
             Map<String, String> fieldToColumnMap = TableObjectMetaCache.getFieldToColumnMap(tableClass, coreRunner.getDataSource());
+            Map<String, String> columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(tableClass, coreRunner.getDataSource());
             Collection<String> columnsNames = fieldToColumnMap.values();
             finalSelectColumns = new ArrayList<>(columnsNames);
+            excludedColumns.forEach(c -> finalExcludedColumns.add(fieldToColumnMap.get(columnToFieldMap.get(c))));
         }
-        finalSelectColumns.removeIf(c -> excludedColumns.stream().anyMatch(c1 -> c1.equalsIgnoreCase(c)));
+        finalSelectColumns.removeIf(c -> finalExcludedColumns.stream().anyMatch(c1 -> c1.equalsIgnoreCase(c)));
         if(CollectionUtils.isEmpty(finalSelectColumns)){
             throw new IllegalArgumentException("At least one column is needed for select, Columns excluded:"+excludedColumns+", tableClass:"+qc.getTableClass());
         }
