@@ -68,11 +68,11 @@ public class MiscUtil {
     }
 
     public static void setValue(Object target,String fieldName,Object value) {
-        setValue(target,findField(target.getClass(),fieldName),value);
+        setValue(target,getField(target.getClass(),fieldName),value);
     }
 
     public static void setValueSafe(Object target,String fieldName,Object value) {
-        setValueSafe(target,findField(target.getClass(),fieldName),value);
+        setValueSafe(target,getField(target.getClass(),fieldName),value);
     }
 
     public static void setValue(Object target,Field field,Object value) {
@@ -107,7 +107,7 @@ public class MiscUtil {
         if(o==null || fieldName==null || fieldName.isEmpty()){
             return null;
         }
-        Field field = findField(o.getClass(),fieldName);
+        Field field = getField(o.getClass(),fieldName);
         return getValue(o,field);
     }
 
@@ -161,19 +161,6 @@ public class MiscUtil {
         }
     }
 
-    public static Field findField(Class<?> clazz,String fieldName){
-        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
-            Field[] declaredFields = c.getDeclaredFields();
-            for(Field field:declaredFields) {
-                String name = field.getName();
-                if(name.equals(fieldName)){
-                    return field;
-                }
-            }
-        }
-        return null;
-    }
-
     public static List<Field> getAllFields(Class<?> clazz){
         List<Field> fields = new ArrayList<>();
         for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
@@ -182,18 +169,6 @@ public class MiscUtil {
             fields.removeIf(Field::isSynthetic);
         }
         return fields;
-    }
-
-    public static List<Object> fromArray(Object array){
-        List<Object> list = new ArrayList<>();
-        if(array!=null){
-            int length = Array.getLength(array);
-            for (int i = 0; i < length; i ++) {
-                Object arrayElement = Array.get(array, i);
-                list.add(arrayElement);
-            }
-        }
-        return list;
     }
 
     public static Field getField(Class<?> clazz,String fieldName){
@@ -206,6 +181,18 @@ public class MiscUtil {
             }
         }
         return null;
+    }
+
+    public static List<Object> fromArray(Object array){
+        List<Object> list = new ArrayList<>();
+        if(array!=null){
+            int length = Array.getLength(array);
+            for (int i = 0; i < length; i ++) {
+                Object arrayElement = Array.get(array, i);
+                list.add(arrayElement);
+            }
+        }
+        return list;
     }
     public static <T> List<T> paginate(List<T> collection, Integer offset, Integer limit){
         if(CollectionUtils.isNotEmpty(collection)&&offset!=null&&limit!=null) {
