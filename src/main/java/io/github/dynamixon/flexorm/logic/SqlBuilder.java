@@ -386,37 +386,32 @@ public class SqlBuilder {
             return null;
         }
         List<Cond> conds = new ArrayList<>();
-        try {
-            Class<?> clazz = obj.getClass();
-            List<Field> fields = MiscUtil.getAllFields(clazz);
-            for (Field field : fields) {
-                if (field.isSynthetic()) {
-                    continue;
-                }
-                CondOpr condOpr = field.getAnnotation(CondOpr.class);
-                if (condOpr == null) {
-                    continue;
-                }
-                field.setAccessible(true);
-                Object value = field.get(obj);
-                if (value == null) {
-                    continue;
-                }
-                if (value instanceof Collection && CollectionUtils.isEmpty((Collection<?>) value)) {
-                    continue;
-                }
-                String opr = StringUtils.trimToEmpty(condOpr.value()).toLowerCase().replaceAll("\\s+", " ");
-                String columnName = condOpr.columnName();
-                if (StringUtils.isBlank(columnName)) {
-                    columnName = field.getName();
-                }
-                if (opr.contains("like")) {
-                    value = "%" + value + "%";
-                }
-                conds.add(new Cond(columnName, opr, value));
+        Class<?> clazz = obj.getClass();
+        List<Field> fields = MiscUtil.getAllFields(clazz);
+        for (Field field : fields) {
+            if (field.isSynthetic()) {
+                continue;
             }
-        } catch (IllegalAccessException e) {
-            throw new DBException(e);
+            CondOpr condOpr = field.getAnnotation(CondOpr.class);
+            if (condOpr == null) {
+                continue;
+            }
+            Object value = MiscUtil.getValueSafe(obj, field);
+            if (value == null) {
+                continue;
+            }
+            if (value instanceof Collection && CollectionUtils.isEmpty((Collection<?>) value)) {
+                continue;
+            }
+            String opr = StringUtils.trimToEmpty(condOpr.value()).toLowerCase().replaceAll("\\s+", " ");
+            String columnName = condOpr.columnName();
+            if (StringUtils.isBlank(columnName)) {
+                columnName = field.getName();
+            }
+            if (opr.contains("like")) {
+                value = "%" + value + "%";
+            }
+            conds.add(new Cond(columnName, opr, value));
         }
         return conds;
     }

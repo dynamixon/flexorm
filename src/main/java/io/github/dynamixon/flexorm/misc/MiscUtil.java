@@ -1,5 +1,6 @@
 package io.github.dynamixon.flexorm.misc;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.lang.reflect.Array;
@@ -22,15 +23,12 @@ public class MiscUtil {
         return t;
     }
 
-    public static Map<String,Object> mapObject(Object o)throws Exception {
+    public static Map<String,Object> mapObject(Object o) {
         Map<String,Object> map = new HashMap<>();
         if(o!=null){
-            Field[] fields = o.getClass().getDeclaredFields();
-            for(Field field:fields){
-                field.setAccessible(true);
-                if(!field.isSynthetic()) {
-                    map.put(field.getName(), field.get(o));
-                }
+            List<Field> allFields = getAllFields(o.getClass());
+            for(Field field:allFields){
+                map.put(field.getName(), getValueSafe(o,field));
             }
         }
         return map;
@@ -57,7 +55,6 @@ public class MiscUtil {
         for (Class<?> c = type; c != null; c = c.getSuperclass()) {
             Field[] declaredFields = c.getDeclaredFields();
             for (Field field : declaredFields) {
-                field.setAccessible(true);
                 if(field.isSynthetic()) {
                     continue;
                 }
@@ -70,41 +67,111 @@ public class MiscUtil {
         return map;
     }
 
-    public static void setValue(Object target,String fieldName,Object value) throws Exception {
-        if(target!=null){
-            setValue(target,target.getClass().getDeclaredField(fieldName),value);
-        }
+    public static void setValue(Object target,String fieldName,Object value) {
+        setValue(target,findField(target.getClass(),fieldName),value);
     }
 
-    public static void setValue(Object target,Field field,Object value) throws Exception {
-        if(target!=null){
+    public static void setValueSafe(Object target,String fieldName,Object value) {
+        setValueSafe(target,findField(target.getClass(),fieldName),value);
+    }
+
+    public static void setValue(Object target,Field field,Object value) {
+        if(target==null||field==null){
+            return;
+        }
+        try {
             if(!field.isAccessible()){
                 field.setAccessible(true);
             }
             field.set(target,value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public static <T> T extractFieldValueFromObj(Object o,String fieldName) throws Exception {
-        T t = null;
-        if(o!=null){
-            Class<?> type = o.getClass();
-            outer:for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-                Field[] declaredFields = c.getDeclaredFields();
-                for(Field field:declaredFields) {
-                    field.setAccessible(true);
-                    String name = field.getName();
-                    if(name.equals(fieldName)){
-                        Object value = field.get(o);
-                        if(value!=null) {
-                            t = (T) value;
-                        }
-                        break outer;
-                    }
+    public static void setValueSafe(Object target,Field field,Object value) {
+        try {
+            setValue(target,field,value);
+        } catch (SecurityException e) {
+            try {
+                PropertyUtils.setProperty(target,field.getName(),value);
+            } catch (Throwable ex) {
+                throw new RuntimeException(ex);
+            }
+        } catch (Throwable e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T extractFieldValueFromObj(Object o,String fieldName) {
+        if(o==null || fieldName==null || fieldName.isEmpty()){
+            return null;
+        }
+        Field field = findField(o.getClass(),fieldName);
+        return getValue(o,field);
+    }
+
+    public static <T> T getValue(Object o,Field field) {
+        try {
+            if(o==null||field==null){
+                return null;
+            }
+            if(!field.isAccessible()){
+                field.setAccessible(true);
+            }
+            Object value = field.get(o);
+            return value==null?null:(T)value;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T getValueSafe(Object o,Field field) {
+        try {
+            return getValue(o,field);
+        } catch (SecurityException e) {
+            try {
+                Object val = PropertyUtils.getProperty(o, field.getName());
+                return val==null?null:(T)val;
+            } catch (Throwable ex) {
+                throw new RuntimeException(ex);
+            }
+        } catch (Throwable e){
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public static <T> T getValue(Object o,String fieldName) {
+        return extractFieldValueFromObj(o,fieldName);
+    }
+
+    public static <T> T getValueSafe(Object o,String fieldName) {
+        try {
+            return getValue(o,fieldName);
+        } catch (SecurityException e) {
+            try {
+                Object val = PropertyUtils.getProperty(o, fieldName);
+                return val==null?null:(T)val;
+            } catch (Throwable ex) {
+                throw new RuntimeException(ex);
+            }
+        } catch (Throwable e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Field findField(Class<?> clazz,String fieldName){
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            Field[] declaredFields = c.getDeclaredFields();
+            for(Field field:declaredFields) {
+                String name = field.getName();
+                if(name.equals(fieldName)){
+                    return field;
                 }
             }
         }
-        return t;
+        return null;
     }
 
     public static List<Field> getAllFields(Class<?> clazz){

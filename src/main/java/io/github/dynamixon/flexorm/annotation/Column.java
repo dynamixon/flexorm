@@ -14,8 +14,16 @@ public @interface Column {
      * As the canonical table column name, the bean field name will apply should this value be empty.
      */
     String value() default "";
+
     /**
      * Used to compose sql, the above value(or bean field name if value itself is empty) will be used if empty.
      */
     String customValue() default "";
+
+    /**
+     * if set true, the annotated field will not be included: <br>
+     * 1. in the sql part <br>
+     * 2. in the result
+     */
+    boolean ignore() default false;
 }

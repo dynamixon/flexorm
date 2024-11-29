@@ -53,6 +53,9 @@ public class MoreGenerousBeanProcessor extends CustomBeanProcessor {
                     Field field = fieldMap.get(fieldName);
                     Column column = field.getAnnotation(Column.class);
                     if(column!=null){
+                        if(column.ignore()){
+                            continue;
+                        }
                         String tblColName = column.value();
                         if(StringUtils.isBlank(tblColName)){
                             tblColName = field.getName();
@@ -93,11 +96,7 @@ public class MoreGenerousBeanProcessor extends CustomBeanProcessor {
                 if (value == null && fieldClass.isPrimitive()) {
                     value = primitiveDefaults.get(fieldClass);
                 }
-                try {
-                    MiscUtil.setValue(bean,field,value);
-                } catch (Exception e) {
-                    throw new SQLException(e);
-                }
+                MiscUtil.setValueSafe(bean,field,value);
             }
         }
         return bean;

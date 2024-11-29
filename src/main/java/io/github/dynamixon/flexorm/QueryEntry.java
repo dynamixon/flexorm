@@ -989,8 +989,7 @@ public class QueryEntry {
                 if (!match) {
                     throw new IllegalArgumentException("fieldOrColumn:" + fieldOrColumn + " can't be recognized!");
                 }
-                field.setAccessible(true);
-                conds.add(new Cond(colName, field.get(obj)));
+                conds.add(new Cond(colName, MiscUtil.getValueSafe(obj, field)));
             }
         } catch (Exception e) {
             throw new DBException(e);
@@ -1061,9 +1060,7 @@ public class QueryEntry {
                         continue;
                     }
                 }
-                field.setAccessible(true);
-                Object value = field.get(obj);
-                map.put(fieldToColumnMap.get(fieldName), value);
+                map.put(fieldToColumnMap.get(fieldName), MiscUtil.getValueSafe(obj, field));
             }
             if (CollectionUtils.isNotEmpty(excludeColumns)) {
                 List<String> lowercaseColNames = excludeColumns.stream().map(String::toLowerCase).collect(Collectors.toList());
@@ -1098,9 +1095,7 @@ public class QueryEntry {
                 if (field.isSynthetic()||!isPrimary||!primaryFields.contains(fieldName)||!fieldToColumnMap.containsKey(fieldName)) {
                     continue;
                 }
-                field.setAccessible(true);
-                Object value = field.get(obj);
-                conds.add(new Cond(fieldToColumnMap.get(fieldName),value));
+                conds.add(new Cond(fieldToColumnMap.get(fieldName),MiscUtil.getValueSafe(obj, field)));
             }
         } catch (Exception e) {
             throw new DBException(e);

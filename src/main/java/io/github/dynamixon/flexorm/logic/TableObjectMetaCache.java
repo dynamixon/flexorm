@@ -77,6 +77,9 @@ public class TableObjectMetaCache {
             String fieldName = field.getName();
             String regulatedFieldName = fieldName.replace("_", "").toLowerCase();
             if(column!=null){
+                if(column.ignore()){
+                    continue;
+                }
                 String colName4SqlCompose = StringUtils.isNotBlank(column.customValue())?column.customValue():
                     (StringUtils.isNotBlank(column.value())?column.value():fieldName);
                 String colName4FieldMapping = StringUtils.isNotBlank(column.value())?column.value():fieldName;
