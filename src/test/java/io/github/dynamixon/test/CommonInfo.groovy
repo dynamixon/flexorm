@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `TABLE_PLACEHOLDER`  (
    `name_mismatch_f`    varchar(200) NULL,
    `text_f`             text NULL,
    `longtext_f`         longtext NULL,
+   `ignore_f`           varchar(200) NULL,
     PRIMARY KEY(id)
    )DEFAULT CHARSET=utf8mb4 COMMENT='table comment'
         '''
@@ -62,7 +63,8 @@ CREATE TABLE IF NOT EXISTS TABLE_PLACEHOLDER (
    varchar_f VARCHAR(255), 
    name_mismatch_f VARCHAR(255), 
    char_f CHAR(10), 
-   uuid_f UUID
+   uuid_f UUID, 
+   ignore_f VARCHAR(255)
 )
 '''
     

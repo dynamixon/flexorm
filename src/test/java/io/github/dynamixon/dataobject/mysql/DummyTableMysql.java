@@ -5,6 +5,7 @@ import io.github.dynamixon.flexorm.annotation.Primary;
 import io.github.dynamixon.flexorm.annotation.Table;
 import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import uk.co.jemos.podam.common.*;
 
 import java.io.Serializable;
@@ -109,5 +110,10 @@ public class DummyTableMysql extends DummyTable implements Serializable {
   @PodamStringValue(length = 100)
   @Column("longtext_f")
   private String longtextF;
+
+  /**  */
+  @PodamStringValue(length = 100)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

@@ -324,6 +324,7 @@ class CommonTest {
         List<String> lowerColNames = new ArrayList<>()
         colNames.each {lowerColNames << it.toLowerCase()}
         Collections.sort(lowerColNames)
+        lowerColNames.remove('ignore_f')
         List<String> compareColNames = new ArrayList<>()
         TableObjectMetaCache.initTableObjectMeta(clazz,qe)
         def columnToFieldMap = TableObjectMetaCache.getColumnToFieldMap(clazz,qe.dataSource)
@@ -1274,6 +1275,7 @@ class CommonTest {
             sqlId(verboseSqlId("nullCond step2"))
         ).findObject(clazz, new Cond(nullField4Test()[1], new Null()))
         def fields = MiscUtil.getAllFields(clazz)
+        fields.removeAll {it.isAnnotationPresent(Column) && it.getAnnotation(Column).ignore()}
         fields.each {
             it.setAccessible(true)
             def origValue = it.get(record)
@@ -1541,6 +1543,7 @@ class CommonTest {
         ).findObject(clazz, new Cond("id", autoGenValue))
         record.setId(autoGenValue)
         def fields = MiscUtil.getAllFields(clazz)
+        fields.removeAll {it.isAnnotationPresent(Column) && it.getAnnotation(Column).ignore()}
         fields.each {
             it.setAccessible(true)
             def origValue = it.get(record)

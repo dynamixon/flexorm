@@ -1,6 +1,7 @@
 package io.github.dynamixon.dataobject.mysql;
 
 import io.github.dynamixon.dataobject.DummyTable;
+import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
 import uk.co.jemos.podam.common.*;
 
@@ -103,5 +104,10 @@ public class DummyTableMysqlReg extends DummyTable implements Serializable {
   @PodamStringValue(length = 100)
   //@Column("longtext_f")
   private String longtextF;
+
+  /**  */
+  @PodamStringValue(length = 100)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

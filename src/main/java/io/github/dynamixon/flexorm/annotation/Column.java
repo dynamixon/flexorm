@@ -21,9 +21,9 @@ public @interface Column {
     String customValue() default "";
 
     /**
-     * if set true, the annotated field will not be included: <br>
-     * 1. in the sql part <br>
-     * 2. in the result
+     * If set true, the annotated field will not be included: <br>
+     * 1. in the sql construction <br>
+     * 2. in the result building
      */
     boolean ignore() default false;
 }

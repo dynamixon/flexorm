@@ -110,4 +110,9 @@ public class DummyTableMysqlAlt extends DummyTable implements Serializable {
   //@Column("longtext_f")
   private String longtextF;
 
+  /**  */
+  @PodamStringValue(length = 100)
+  @Column(ignore = true)
+  private String ignoreF;
+
 }

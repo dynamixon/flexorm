@@ -1,6 +1,7 @@
 package io.github.dynamixon.dataobject.h2;
 
 import io.github.dynamixon.dataobject.DummyTable;
+import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
 import uk.co.jemos.podam.common.*;
 
@@ -92,5 +93,10 @@ public class DummyTableH2Reg extends DummyTable implements Serializable {
   /**  */
   //@Column("UUID_F")
   private UUID uuidF;
+
+  /**  */
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

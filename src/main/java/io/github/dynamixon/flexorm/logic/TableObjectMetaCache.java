@@ -129,6 +129,9 @@ public class TableObjectMetaCache {
             List<String> colNames = coreRunner.getColNames(tableName);
             List<Field> fields = MiscUtil.getAllFields(tableClass);
             for (Field field : fields) {
+                if(field.isAnnotationPresent(Column.class)&&field.getAnnotation(Column.class).ignore()){
+                    continue;
+                }
                 String fieldName = field.getName();
                 String regulatedFieldName = fieldName.replace("_", "").toLowerCase();
                 colNames.forEach(colName -> {

@@ -99,4 +99,9 @@ public class DummyTableH2Alt extends DummyTable implements Serializable {
   //@Column("UUID_F")
   private UUID uuidF;
 
+  /**  */
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
+
 }

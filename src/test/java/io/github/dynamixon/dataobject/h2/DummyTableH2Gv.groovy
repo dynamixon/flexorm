@@ -92,6 +92,11 @@ class DummyTableH2Gv extends DummyTable implements Serializable{
     @Column("UUID_F")
     private UUID uuidF
 
+    /**  */
+    @PodamStringValue(length = 10)
+    @Column(ignore = true)
+    private String ignoreF
+
     Long getId() {
         return id
     }
@@ -234,5 +239,13 @@ class DummyTableH2Gv extends DummyTable implements Serializable{
 
     void setMismatchedName(String mismatchedName) {
         this.mismatchedName = mismatchedName
+    }
+
+    String getIgnoreF() {
+        return ignoreF
+    }
+
+    void setIgnoreF(String ignoreF) {
+        this.ignoreF = ignoreF
     }
 }
