@@ -121,7 +121,7 @@ public class MiscUtil {
             }
             Object value = field.get(o);
             return value==null?null:(T)value;
-        } catch (Throwable e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
