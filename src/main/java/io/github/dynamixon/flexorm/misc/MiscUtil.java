@@ -14,6 +14,8 @@ import java.util.stream.Stream;
  */
 public class MiscUtil {
 
+    private volatile static boolean canOverrideAccessible = true;
+
     public static <T> T getFirst(Collection<? extends T> coll){
         T t = null;
         if(CollectionUtils.isNotEmpty(coll)){
@@ -91,15 +93,23 @@ public class MiscUtil {
 
     public static void setValueSafe(Object target,Field field,Object value) {
         try {
-            setValue(target,field,value);
-        } catch (SecurityException e) {
-            try {
-                PropertyUtils.setProperty(target,field.getName(),value);
-            } catch (Throwable ex) {
-                throw new RuntimeException(ex);
+            if(canOverrideAccessible){
+                setValue(target,field,value);
+            }else {
+                setProperty(target,field.getName(),value);
             }
+        } catch (SecurityException e) {
+            canOverrideAccessible = false;
+            setProperty(target,field.getName(),value);
         } catch (Throwable e){
             throw new RuntimeException(e);
+        }
+    }
+    public static void setProperty(Object target,String fieldName,Object value){
+        try {
+            PropertyUtils.setProperty(target,fieldName,value);
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -128,18 +138,17 @@ public class MiscUtil {
 
     public static <T> T getValueSafe(Object o,Field field) {
         try {
-            return getValue(o,field);
-        } catch (SecurityException e) {
-            try {
-                Object val = PropertyUtils.getProperty(o, field.getName());
-                return val==null?null:(T)val;
-            } catch (Throwable ex) {
-                throw new RuntimeException(ex);
+            if(canOverrideAccessible){
+                return getValue(o,field);
+            }else {
+                return getProperty(o,field.getName());
             }
+        } catch (SecurityException e) {
+            canOverrideAccessible = false;
+            return getProperty(o,field.getName());
         } catch (Throwable e){
             throw new RuntimeException(e);
         }
-
     }
 
     public static <T> T getValue(Object o,String fieldName) {
@@ -148,16 +157,24 @@ public class MiscUtil {
 
     public static <T> T getValueSafe(Object o,String fieldName) {
         try {
-            return getValue(o,fieldName);
-        } catch (SecurityException e) {
-            try {
-                Object val = PropertyUtils.getProperty(o, fieldName);
-                return val==null?null:(T)val;
-            } catch (Throwable ex) {
-                throw new RuntimeException(ex);
+            if(canOverrideAccessible){
+                return getValue(o,fieldName);
+            }else {
+                return getProperty(o,fieldName);
             }
+        } catch (SecurityException e) {
+            canOverrideAccessible = false;
+            return getProperty(o,fieldName);
         } catch (Throwable e){
             throw new RuntimeException(e);
+        }
+    }
+    public static <T> T getProperty(Object o,String fieldName){
+        try {
+            Object val = PropertyUtils.getProperty(o, fieldName);
+            return val==null?null:(T)val;
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
         }
     }
 
