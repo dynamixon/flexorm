@@ -83,6 +83,9 @@ public class TestGenMySQL implements Serializable {
   @Column("longtext_f")
   private String longtextF;
 
+  @Column("ignore_f")
+  private String ignoreF;
+
   public TestGenMySQL(){
   }
 
@@ -107,6 +110,7 @@ public class TestGenMySQL implements Serializable {
     setNameMismatchF(builder.nameMismatchF);
     setTextF(builder.textF);
     setLongtextF(builder.longtextF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -270,6 +274,14 @@ public class TestGenMySQL implements Serializable {
     this.longtextF = longtextF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -295,6 +307,7 @@ public class TestGenMySQL implements Serializable {
     private String nameMismatchF;
     private String textF;
     private String longtextF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -395,6 +408,11 @@ public class TestGenMySQL implements Serializable {
 
     public Builder longtextF(String longtextF) {
       this.longtextF = longtextF;
+      return this;
+    }
+
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
       return this;
     }
 
@@ -1215,6 +1233,9 @@ public class TestGenH2 implements Serializable {
   @Column("UUID_F")
   private UUID uuidF;
 
+  @Column("IGNORE_F")
+  private String ignoreF;
+
   public TestGenH2(){
   }
 
@@ -1237,6 +1258,7 @@ public class TestGenH2 implements Serializable {
     setNameMismatchF(builder.nameMismatchF);
     setCharF(builder.charF);
     setUuidF(builder.uuidF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -1384,6 +1406,14 @@ public class TestGenH2 implements Serializable {
     this.uuidF = uuidF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -1407,6 +1437,7 @@ public class TestGenH2 implements Serializable {
     private String nameMismatchF;
     private String charF;
     private UUID uuidF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -1497,6 +1528,11 @@ public class TestGenH2 implements Serializable {
 
     public Builder uuidF(UUID uuidF) {
       this.uuidF = uuidF;
+      return this;
+    }
+
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
       return this;
     }
 
