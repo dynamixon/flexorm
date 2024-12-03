@@ -12,7 +12,7 @@ import uk.co.jemos.podam.common.PodamIntValue
 import uk.co.jemos.podam.common.PodamLongValue
 import uk.co.jemos.podam.common.PodamStringValue
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 class DummyTableMysqlGv  extends DummyTable implements Serializable{
 
     /**  */

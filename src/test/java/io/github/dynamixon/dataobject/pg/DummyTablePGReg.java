@@ -1,6 +1,7 @@
 package io.github.dynamixon.dataobject.pg;
 
 import io.github.dynamixon.dataobject.DummyTable;
+import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
 import uk.co.jemos.podam.common.*;
 
@@ -79,5 +80,9 @@ public class DummyTablePGReg extends DummyTable implements Serializable {
 
   //@Column("boolean_f")
   private Boolean booleanF;
+
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

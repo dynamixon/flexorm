@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS "TABLE_PLACEHOLDER"  (
    "date_f"               date NULL,
    "time_f"               time NULL,
    "boolean_f"            boolean NULL ,
+   "ignore_f"            varchar(200) NULL,
    PRIMARY KEY("id") 
    );
    
@@ -104,7 +105,8 @@ CREATE TABLE IF NOT EXISTS TABLE_PLACEHOLDER (
    text_f TEXT , 
    name_mismatch_f TEXT , 
    real_f REAL , 
-   numeric_f NUMERIC
+   numeric_f NUMERIC, 
+   ignore_f TEXT
 )
 '''
 
@@ -131,6 +133,7 @@ CREATE TABLE IF NOT EXISTS TABLE_PLACEHOLDER  (
    name_mismatch_f     varchar(200) NULL,
    LONGVARCHAR_f        LONGVARCHAR NULL,
    UUID_f    UUID NULL,
+   ignore_f     varchar(200) NULL,
     PRIMARY KEY(id)
 )
 '''
@@ -159,6 +162,7 @@ BEGIN
         tinyint_f          tinyint NULL,
         varchar_f          varchar(25) NULL,
         name_mismatch_f    varchar(25) NULL,
+        ignore_f          varchar(25) NULL,
         CONSTRAINT TABLE_PLACEHOLDER_pk PRIMARY KEY CLUSTERED(id)
     )
 END

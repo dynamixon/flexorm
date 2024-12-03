@@ -7,7 +7,7 @@ import io.github.dynamixon.flexorm.annotation.Table
 import io.github.dynamixon.flexorm.annotation.Column
 import uk.co.jemos.podam.common.*
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 class DummyTableH2Gv extends DummyTable implements Serializable{
 
     /**  */

@@ -37,6 +37,10 @@ class DummyTableSqliteGv extends DummyTable implements Serializable{
     @Column("name_mismatch_f")
     private String mismatchedName
 
+    @PodamStringValue(length = 10)
+    @Column(ignore = true)
+    private String ignoreF
+
     Long getId() {
         return id
     }
@@ -75,5 +79,13 @@ class DummyTableSqliteGv extends DummyTable implements Serializable{
 
     void setMismatchedName(String mismatchedName) {
         this.mismatchedName = mismatchedName
+    }
+
+    String getIgnoreF() {
+        return ignoreF
+    }
+
+    void setIgnoreF(String ignoreF) {
+        this.ignoreF = ignoreF
     }
 }

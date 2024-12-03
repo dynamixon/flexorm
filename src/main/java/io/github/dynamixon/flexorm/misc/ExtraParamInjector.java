@@ -388,25 +388,25 @@ public class ExtraParamInjector {
     }
 
     public static void unsetForUpdate(){
-        ExtraParamInjector.unsetExtraConds();
-        ExtraParamInjector.unsetExtraOrConds();
-        ExtraParamInjector.unsetExtraColumnValuePairs4Update();
-        ExtraParamInjector.unsetEmptyUpdateCondRestriction();
-        ExtraParamInjector.unsetIgnoreColumnsFromCondForUpdate();
+        unsetExtraConds();
+        unsetExtraOrConds();
+        unsetExtraColumnValuePairs4Update();
+        unsetEmptyUpdateCondRestriction();
+        unsetIgnoreColumnsFromCondForUpdate();
 
-        ExtraParamInjector.unsetSqlId();
-        ExtraParamInjector.unsetInterceptor();
-        ExtraParamInjector.unsetInterceptorChainMode();
+        unsetSqlId();
+        unsetInterceptor();
+        unsetInterceptorChainMode();
     }
 
     public static void unsetForDel(){
-        ExtraParamInjector.unsetExtraConds();
-        ExtraParamInjector.unsetExtraOrConds();
-        ExtraParamInjector.unsetEmptyUpdateCondRestriction();
+        unsetExtraConds();
+        unsetExtraOrConds();
+        unsetEmptyUpdateCondRestriction();
 
-        ExtraParamInjector.unsetSqlId();
-        ExtraParamInjector.unsetInterceptor();
-        ExtraParamInjector.unsetInterceptorChainMode();
+        unsetSqlId();
+        unsetInterceptor();
+        unsetInterceptorChainMode();
     }
 
     public static void unsetSqlId(){

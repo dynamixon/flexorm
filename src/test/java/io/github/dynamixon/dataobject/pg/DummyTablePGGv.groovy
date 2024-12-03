@@ -16,7 +16,7 @@ import java.sql.Date
 import java.sql.Time
 import java.sql.Timestamp
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 class DummyTablePGGv extends DummyTable implements Serializable{
 
     @PodamExclude
@@ -88,6 +88,10 @@ class DummyTablePGGv extends DummyTable implements Serializable{
 
     @Column("boolean_f")
     private Boolean booleanF
+
+    @PodamStringValue(length = 10)
+    @Column(ignore = true)
+    private String ignoreF
 
     Long getId() {
         return id
@@ -231,5 +235,13 @@ class DummyTablePGGv extends DummyTable implements Serializable{
 
     void setMismatchedName(String mismatchedName) {
         this.mismatchedName = mismatchedName
+    }
+
+    String getIgnoreF() {
+        return ignoreF
+    }
+
+    void setIgnoreF(String ignoreF) {
+        this.ignoreF = ignoreF
     }
 }

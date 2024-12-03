@@ -41,4 +41,8 @@ public class DummyTableSqliteAlt extends DummyTable implements Serializable {
   @Column("name_mismatch_f")
   private String mismatchedName;
 
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
+
 }

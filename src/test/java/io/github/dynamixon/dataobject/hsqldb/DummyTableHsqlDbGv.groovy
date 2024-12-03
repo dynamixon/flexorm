@@ -14,7 +14,7 @@ import uk.co.jemos.podam.common.PodamIntValue
 import uk.co.jemos.podam.common.PodamLongValue
 import uk.co.jemos.podam.common.PodamStringValue
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 @PropertyOptions
 class DummyTableHsqlDbGv extends DummyTable implements Serializable{
 
@@ -93,6 +93,10 @@ class DummyTableHsqlDbGv extends DummyTable implements Serializable{
 
     @Column("UUID_F")
     private UUID uuidF
+
+    @PodamStringValue(length = 10)
+    @Column(ignore = true)
+    private String ignoreF
 
     Integer getId() {
         return id
@@ -252,5 +256,13 @@ class DummyTableHsqlDbGv extends DummyTable implements Serializable{
 
     void setMismatchedName(String mismatchedName) {
         this.mismatchedName = mismatchedName
+    }
+
+    String getIgnoreF() {
+        return ignoreF
+    }
+
+    void setIgnoreF(String ignoreF) {
+        this.ignoreF = ignoreF
     }
 }

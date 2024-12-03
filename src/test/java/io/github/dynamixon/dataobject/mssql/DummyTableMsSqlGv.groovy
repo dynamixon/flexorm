@@ -13,7 +13,7 @@ import uk.co.jemos.podam.common.PodamIntValue
 import uk.co.jemos.podam.common.PodamShortValue
 import uk.co.jemos.podam.common.PodamStringValue
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 class DummyTableMsSqlGv extends DummyTable implements Serializable{
 
     @PodamExclude
@@ -89,6 +89,10 @@ class DummyTableMsSqlGv extends DummyTable implements Serializable{
     @PodamStringValue(length = 5)
     @Column("name_mismatch_f")
     private String mismatchedName
+
+    @PodamStringValue(length = 10)
+    @Column(ignore = true)
+    private String ignoreF
 
     Long getId() {
         return id
@@ -240,5 +244,13 @@ class DummyTableMsSqlGv extends DummyTable implements Serializable{
 
     void setMismatchedName(String mismatchedName) {
         this.mismatchedName = mismatchedName
+    }
+
+    String getIgnoreF() {
+        return ignoreF
+    }
+
+    void setIgnoreF(String ignoreF) {
+        this.ignoreF = ignoreF
     }
 }

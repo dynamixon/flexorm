@@ -1,6 +1,7 @@
 package io.github.dynamixon.dataobject.mssql;
 
 import io.github.dynamixon.dataobject.DummyTable;
+import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
 import uk.co.jemos.podam.common.*;
 
@@ -63,5 +64,9 @@ public class DummyTableMsSqlReg extends DummyTable implements Serializable {
 
   @PodamStringValue(length = 5)
   private String mismatchedName;
+
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

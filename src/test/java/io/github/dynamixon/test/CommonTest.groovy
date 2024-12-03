@@ -96,6 +96,10 @@ class CommonTest {
         return configMap().get("otherResultClass") as Class<?>
     }
 
+    protected String ignoreColumn(){
+        return configMap().get("ignoreColumn")
+    }
+
     protected Map<String,Object> configMap(){
         return [
             "recordClass":[],
@@ -113,6 +117,7 @@ class CommonTest {
             "sumTestField":null,
             "autoGenColName":"id",
             "otherResultClass":null,
+            "ignoreColumn":'ignore_f',
         ] as Map<String, Object>
     }
 
@@ -222,6 +227,7 @@ class CommonTest {
                     batchInsertVarArg()
                     jdbcBatchInsert()
                     emptyCondBlock()
+                    ignoreTest()
                     delAll()
                     tx()
                 }catch(Throwable e){
@@ -1700,6 +1706,65 @@ class CommonTest {
             assert e instanceof IllegalArgumentException
             assert e.getMessage().contains('Delete without condition')
         }
+    }
+
+    void ignoreTest(){
+        logger.info ' -- ignoreTest -- '
+        def allFields = MiscUtil.getAllFields(getCurrentClass())
+        List<String> ignoredFieldNames = allFields.findAll {it.isAnnotationPresent(Column) && it.getAnnotation(Column).ignore()}.collect {it.getName()}
+        logger.info(verboseSqlId("ignoredFieldNames: "+ignoredFieldNames))
+        assert ignoredFieldNames.size() > 0
+        def metaHolder = TableObjectMetaCache.getMetaMap().get(qe.getDataSource())
+        def columnToFieldMap = metaHolder.getColumnToFieldClassMap().get(getCurrentClass())
+        def fieldToColumnMap = metaHolder.getFieldToColumnClassMap().get(getCurrentClass())
+        def primaryFieldNames = metaHolder.getPrimaryFieldsClassMap().get(getCurrentClass())
+        Set<String> allFieldNames = []
+        if(columnToFieldMap){
+            allFieldNames.addAll(columnToFieldMap.values())
+        }
+        if(fieldToColumnMap){
+            allFieldNames.addAll(fieldToColumnMap.keySet())
+        }
+        if(primaryFieldNames){
+            allFieldNames.addAll(primaryFieldNames)
+        }
+        def find = allFieldNames.find { ignoredFieldNames.contains(it) }
+        assert find == null
+
+        def record = MiscUtil.getFirst(CommonTool.generateDummyRecords(getCurrentClass(), 1))
+        def id = qe.prep(
+            sqlId(verboseSqlId("ignoreTest step1"))
+        ).insertAndReturnAutoGen(record)
+
+        def dbRecord = qe.prep(
+            sqlId(verboseSqlId("ignoreTest step2"))
+        ).findObject(getCurrentClass(), new Cond('id', id))
+        ignoredFieldNames.each {
+            assert MiscUtil.getValueSafe(dbRecord, it) == null
+        }
+        def ignoredFieldName = ignoredFieldNames[0]
+        def instance = getCurrentClass().newInstance()
+        MiscUtil.setValueSafe(instance, ignoredFieldName, 'some-value')
+        assert MiscUtil.getValueSafe(instance, ignoredFieldName) == 'some-value'
+
+        try {
+            qe.prep(
+                sqlId(verboseSqlId("ignoreTest step3"))
+            ).updateSelective(instance, new Cond('id', id))
+            assert false
+        } catch (e) {
+            assert e.getMessage().contains('There are no values to be updated')
+        }
+
+        def updateNum = qe.prep(sqlId(verboseSqlId("ignoreTest step4")))
+            .genericUpdate("update ${tableName()} set ${ignoreColumn()} =? where id = ?", 'some-value', id)
+        assert updateNum == 1
+
+        def maps = qe.prep(sqlId(verboseSqlId("ignoreTest step5"))).genericQry("select * from ${tableName()} where id = ?", id)
+        assert maps[0].get(ignoreColumn()) == 'some-value'
+
+        dbRecord = qe.prep(sqlId(verboseSqlId("ignoreTest step6"))).findObject(getCurrentClass(), new Cond('id', id))
+        assert MiscUtil.getValueSafe(dbRecord, ignoredFieldName) == null
     }
 
     void delAll(){

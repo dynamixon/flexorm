@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**  */
-@Table("dummy_table")
+@Table(value = "dummy_table", autoColumnDetection = false)
 @Data
 public class DummyTableH2 extends DummyTable implements Serializable {
 

@@ -86,4 +86,8 @@ public class DummyTablePGAlt extends DummyTable implements Serializable {
   //@Column("boolean_f")
   private Boolean booleanF;
 
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
+
 }

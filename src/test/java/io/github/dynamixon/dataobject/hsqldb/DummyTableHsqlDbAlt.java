@@ -72,4 +72,8 @@ public class DummyTableHsqlDbAlt extends DummyTable implements Serializable {
 
   private UUID uuidF;
 
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
+
 }

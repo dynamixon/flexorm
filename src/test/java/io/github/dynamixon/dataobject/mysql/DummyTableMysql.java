@@ -1,18 +1,17 @@
 package io.github.dynamixon.dataobject.mysql;
 
 import io.github.dynamixon.dataobject.DummyTable;
+import io.github.dynamixon.flexorm.annotation.Column;
 import io.github.dynamixon.flexorm.annotation.Primary;
 import io.github.dynamixon.flexorm.annotation.Table;
-import io.github.dynamixon.flexorm.annotation.Column;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import uk.co.jemos.podam.common.*;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**  */
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 @Data
 public class DummyTableMysql extends DummyTable implements Serializable {
 

@@ -12,7 +12,7 @@ import uk.co.jemos.podam.common.PodamStringValue;
 import java.io.Serializable;
 
 /**  */
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 @Data
 public class DummyTableSqlite extends DummyTable implements Serializable {
 
@@ -40,5 +40,9 @@ public class DummyTableSqlite extends DummyTable implements Serializable {
   @PodamStringValue(length = 5)
   @Column("name_mismatch_f")
   private String mismatchedName;
+
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

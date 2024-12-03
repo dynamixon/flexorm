@@ -12,7 +12,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-@Table("dummy_table")
+@Table(value = "dummy_table",autoColumnDetection = false)
 @Data
 public class DummyTablePG extends DummyTable implements Serializable {
 
@@ -85,5 +85,9 @@ public class DummyTablePG extends DummyTable implements Serializable {
 
   @Column("boolean_f")
   private Boolean booleanF;
+
+  @PodamStringValue(length = 10)
+  @Column(ignore = true)
+  private String ignoreF;
 
 }

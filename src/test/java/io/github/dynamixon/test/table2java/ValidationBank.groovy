@@ -495,6 +495,9 @@ public class TestGenPostgreSql implements Serializable {
   @Column("boolean_f")
   private Boolean booleanF;
 
+  @Column("ignore_f")
+  private String ignoreF;
+
   public TestGenPostgreSql(){
   }
 
@@ -517,6 +520,7 @@ public class TestGenPostgreSql implements Serializable {
     setDateF(builder.dateF);
     setTimeF(builder.timeF);
     setBooleanF(builder.booleanF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -664,6 +668,14 @@ public class TestGenPostgreSql implements Serializable {
     this.booleanF = booleanF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -687,6 +699,7 @@ public class TestGenPostgreSql implements Serializable {
     private Date dateF;
     private Time timeF;
     private Boolean booleanF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -780,6 +793,11 @@ public class TestGenPostgreSql implements Serializable {
       return this;
     }
 
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
+      return this;
+    }
+
     public TestGenPostgreSql build() {
       return new TestGenPostgreSql(this);
     }
@@ -857,6 +875,9 @@ public class TestGenMsSql implements Serializable {
   @Column("name_mismatch_f")
   private String nameMismatchF;
 
+  @Column("ignore_f")
+  private String ignoreF;
+
   public TestGenMsSql(){
   }
 
@@ -880,6 +901,7 @@ public class TestGenMsSql implements Serializable {
     setTinyintF(builder.tinyintF);
     setVarcharF(builder.varcharF);
     setNameMismatchF(builder.nameMismatchF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -1035,6 +1057,14 @@ public class TestGenMsSql implements Serializable {
     this.nameMismatchF = nameMismatchF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -1059,6 +1089,7 @@ public class TestGenMsSql implements Serializable {
     private Short tinyintF;
     private String varcharF;
     private String nameMismatchF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -1154,6 +1185,11 @@ public class TestGenMsSql implements Serializable {
 
     public Builder nameMismatchF(String nameMismatchF) {
       this.nameMismatchF = nameMismatchF;
+      return this;
+    }
+
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
       return this;
     }
 
@@ -1617,6 +1653,9 @@ public class TestGenHsqlDb implements Serializable {
   @Column("UUID_F")
   private UUID uuidF;
 
+  @Column("IGNORE_F")
+  private String ignoreF;
+
   public TestGenHsqlDb(){
   }
 
@@ -1641,6 +1680,7 @@ public class TestGenHsqlDb implements Serializable {
     setNameMismatchF(builder.nameMismatchF);
     setLongvarcharF(builder.longvarcharF);
     setUuidF(builder.uuidF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -1804,6 +1844,14 @@ public class TestGenHsqlDb implements Serializable {
     this.uuidF = uuidF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -1829,6 +1877,7 @@ public class TestGenHsqlDb implements Serializable {
     private String nameMismatchF;
     private String longvarcharF;
     private UUID uuidF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -1932,6 +1981,11 @@ public class TestGenHsqlDb implements Serializable {
       return this;
     }
 
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
+      return this;
+    }
+
     public TestGenHsqlDb build() {
       return new TestGenHsqlDb(this);
     }
@@ -1966,6 +2020,9 @@ public class TestGenSQLite implements Serializable {
   @Column("numeric_f")
   private Double numericF;
 
+  @Column("ignore_f")
+  private String ignoreF;
+
   public TestGenSQLite(){
   }
 
@@ -1975,6 +2032,7 @@ public class TestGenSQLite implements Serializable {
     setNameMismatchF(builder.nameMismatchF);
     setRealF(builder.realF);
     setNumericF(builder.numericF);
+    setIgnoreF(builder.ignoreF);
   }
 
 
@@ -2018,6 +2076,14 @@ public class TestGenSQLite implements Serializable {
     this.numericF = numericF;
   }
 
+  public String getIgnoreF() {
+    return ignoreF;
+  }
+
+  public void setIgnoreF( String ignoreF ) {
+    this.ignoreF = ignoreF;
+  }
+
   public static Builder builder(){
     return new Builder();
   }
@@ -2028,6 +2094,7 @@ public class TestGenSQLite implements Serializable {
     private String nameMismatchF;
     private Double realF;
     private Double numericF;
+    private String ignoreF;
 
     public Builder() {}
 
@@ -2053,6 +2120,11 @@ public class TestGenSQLite implements Serializable {
 
     public Builder numericF(Double numericF) {
       this.numericF = numericF;
+      return this;
+    }
+
+    public Builder ignoreF(String ignoreF) {
+      this.ignoreF = ignoreF;
       return this;
     }
 
